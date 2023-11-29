@@ -33,7 +33,7 @@ impl<'a> FileHandler<'a> {
                 if entry.file_type()?.is_dir() {
                     self.fetch_directory(entry.path().as_path())?;
                 } else if let Some(extension) = entry.path().extension() {
-                    if extension == "tw" {
+                    if extension == "md" {
                         self.files.push(entry);
                     }
                 }
