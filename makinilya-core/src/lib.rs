@@ -1,2 +1,2 @@
-pub mod files;
 pub mod core;
+pub mod files;
