@@ -1,52 +1,34 @@
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum StoryModelError {
-    #[error("Source does not exist")]
-    SourceIsNone,
-}
-
-pub struct StoryModel {
-    source: String,
-    children: Vec<Box<StoryModel>>,
+#[derive(Debug)]
+pub enum StoryModel {
+    Content {
+        title: String,
+        source: String,
+    },
+    Part {
+        title: String,
+        children: Vec<Box<StoryModel>>,
+    },
 }
 
 impl StoryModel {
-    pub fn source(&self) -> &String {
-        &self.source
-    }
-    pub fn children(&self) -> &Vec<Box<StoryModel>> {
-        &self.children
-    }
-}
-
-pub struct StoryModelBuilder {
-    source: Option<String>,
-    children: Vec<Box<StoryModel>>,
-}
-
-impl StoryModelBuilder {
-    pub fn new() -> Self {
-        Self {
-            source: None,
+    pub fn new_part(title: &str) -> Self {
+        Self::Part {
+            title: title.to_owned(),
             children: vec![],
         }
     }
 
-    pub fn set_source(mut self, source: String) -> Self {
-        self.source = Some(source);
-        self
+    pub fn new_content(title: &str, content: &str) -> Self {
+        Self::Content {
+            title: title.to_owned(),
+            source: content.to_owned(),
+        }
     }
 
-    pub fn add_child(mut self, child: StoryModel) -> Self {
-        self.children.push(Box::new(child));
-        self
-    }
-
-    pub fn build(self) -> Result<StoryModel, StoryModelError> {
-        Ok(StoryModel {
-            source: self.source.ok_or(StoryModelError::SourceIsNone)?,
-            children: self.children,
-        })
+    pub fn push(&mut self, story_model: StoryModel) {
+        match self {
+            Self::Part { children, .. } => children.push(Box::new(story_model)),
+            _ => panic!("Tried to push to story model content."),
+        }
     }
 }
