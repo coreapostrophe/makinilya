@@ -1,7 +1,7 @@
 use std::{
     fs::{self},
     io,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use thiserror::Error;
@@ -21,47 +21,20 @@ pub enum FileHandlerError {
 }
 
 #[derive(Debug)]
-pub struct FileHandler<'a> {
-    base_directory: &'a Path,
-    story_model: Option<StoryModel>,
-}
+pub struct FileHandler;
 
-impl<'a> FileHandler<'a> {
-    pub fn new() -> Self {
-        Self {
-            base_directory: Path::new("./"),
-            story_model: None,
-        }
-    }
-
-    pub fn base_directory(&self) -> &'a Path {
-        self.base_directory
-    }
-
-    pub fn story_model(&self) -> Option<&StoryModel> {
-        self.story_model.as_ref()
-    }
-
-    pub fn init(&mut self) -> Result<(), FileHandlerError> {
+impl FileHandler {
+    pub fn init(base_directory: impl Into<PathBuf>) -> Result<StoryModel, FileHandlerError> {
         let mut story_model = StoryModel::new_part("root");
 
-        let mut base_directory_buf = self.base_directory.to_path_buf();
-        base_directory_buf.push("draft");
+        let mut base_directory: PathBuf = base_directory.into();
+        base_directory.push("draft");
 
-        self.build_story(base_directory_buf.as_path(), &mut story_model)?;
-        self.story_model = Some(story_model);
-        Ok(())
+        Self::build_story(base_directory.as_path(), &mut story_model)?;
+        Ok(story_model)
     }
 
-    pub fn set_base_directory(&mut self, base_directory: &'a str) {
-        self.base_directory = Path::new(base_directory);
-    }
-
-    fn build_story(
-        &mut self,
-        path: &Path,
-        partition: &mut StoryModel,
-    ) -> Result<(), FileHandlerError> {
+    fn build_story(path: &Path, partition: &mut StoryModel) -> Result<(), FileHandlerError> {
         if !path.is_dir() {
             return Err(FileHandlerError::InvalidDirectory(
                 path.to_string_lossy().into_owned(),
@@ -83,7 +56,7 @@ impl<'a> FileHandler<'a> {
             if let Some(object_name) = stripped_path.to_str() {
                 if entry_path.is_dir() {
                     let mut nested_story_model = StoryModel::new_part(object_name);
-                    self.build_story(entry_path, &mut nested_story_model)?;
+                    Self::build_story(entry_path, &mut nested_story_model)?;
                     partition.push(nested_story_model);
                 } else if let Some(extension) = entry_path.extension() {
                     if extension == "mt" {
