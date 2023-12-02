@@ -22,6 +22,10 @@ mod parser_tests {
         assert!(file.is_ok());
         let file = MakinilyaParser::parse(Rule::file, "{{ name_32 }}");
         assert!(file.is_ok());
+        let file = MakinilyaParser::parse(Rule::file, "{{ name_32.long }}");
+        assert!(file.is_ok());
+        let file = MakinilyaParser::parse(Rule::file, "{{ name_32..long }}");
+        assert!(file.is_err());
     }
 
     #[test]

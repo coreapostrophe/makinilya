@@ -1,5 +1,5 @@
 WHITESPACE           = _{ " " }
-identifier           =  { "_"? ~ ASCII_ALPHA+ ~ (ASCII_ALPHANUMERIC | "_")* }
+identifier           =  { "_"? ~ ASCII_ALPHA+ ~ ("."? ~ (ASCII_ALPHANUMERIC | "_"))* }
 string_interpolation =  { "{{" ~ (!"}}" ~ identifier) ~ "}}" }
 content              = ${ (!"{{" ~ ANY)+ }
 expression           =  { string_interpolation | content }

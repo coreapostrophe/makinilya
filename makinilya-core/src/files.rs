@@ -29,7 +29,7 @@ pub struct FileHandler<'a> {
 impl<'a> FileHandler<'a> {
     pub fn new() -> Self {
         Self {
-            base_directory: Path::new("./draft"),
+            base_directory: Path::new("./"),
             story_model: None,
         }
     }
@@ -44,7 +44,11 @@ impl<'a> FileHandler<'a> {
 
     pub fn init(&mut self) -> Result<(), FileHandlerError> {
         let mut story_model = StoryModel::new_part("root");
-        self.fetch_directory(self.base_directory, &mut story_model)?;
+
+        let mut base_directory_buf = self.base_directory.to_path_buf();
+        base_directory_buf.push("draft");
+
+        self.fetch_directory(base_directory_buf.as_path(), &mut story_model)?;
         self.story_model = Some(story_model);
         Ok(())
     }
@@ -82,7 +86,7 @@ impl<'a> FileHandler<'a> {
                     self.fetch_directory(entry_path, &mut nested_story_model)?;
                     partition.push(nested_story_model);
                 } else if let Some(extension) = entry_path.extension() {
-                    if extension == "md" {
+                    if extension == "mt" {
                         let source = fs::read_to_string(entry_path)
                             .map_err(|error| FileHandlerError::IoException(error))?;
 
