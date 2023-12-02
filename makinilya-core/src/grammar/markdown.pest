@@ -1,0 +1,5 @@
+ws                   = _{ " "? }
+identifier           =  { ASCII_ALPHANUMERIC+ }
+string_interpolation =  { "{{" ~ (ws ~ (!"}}" ~ identifier) ~ ws) ~ "}}" }
+expression           =  { string_interpolation }
+markdown             =  { SOI ~ expression* ~ EOI }
