@@ -12,25 +12,25 @@ mod parser_tests {
 
     #[test]
     fn parses_string_interpolation() {
-        let file = MakinilyaParser::parse(Rule::file, "{{ name }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::file, "{{ }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ }}");
         assert!(file.is_err());
-        let file = MakinilyaParser::parse(Rule::file, "{{ 32 }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ 32 }}");
         assert!(file.is_err());
-        let file = MakinilyaParser::parse(Rule::file, "{{ name32 }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name32 }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::file, "{{ name_32 }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name_32 }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::file, "{{ name_32.long }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name_32.long }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::file, "{{ name_32..long }}");
+        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name_32..long }}");
         assert!(file.is_err());
     }
 
     #[test]
     fn parses_content() {
-        let file = MakinilyaParser::parse(Rule::file, "Hello. My name is {{ name }}.");
+        let file = MakinilyaParser::parse(Rule::makinilya, "Hello. My name is {{ name }}.");
         assert!(file.is_ok());
     }
 }

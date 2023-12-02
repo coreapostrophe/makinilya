@@ -1,6 +1,6 @@
 WHITESPACE           = _{ " " }
 identifier           =  { "_"? ~ ASCII_ALPHA+ ~ ("."? ~ (ASCII_ALPHANUMERIC | "_"))* }
 string_interpolation =  { "{{" ~ (!"}}" ~ identifier) ~ "}}" }
-content              = ${ (!"{{" ~ ANY)+ }
-expression           =  { string_interpolation | content }
-file                 =  { SOI ~ expression* ~ EOI }
+text_content         = ${ (!"{{" ~ ANY)+ }
+expression           =  { string_interpolation | text_content }
+makinilya            =  { SOI ~ expression* ~ EOI }

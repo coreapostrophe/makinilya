@@ -48,7 +48,7 @@ impl<'a> FileHandler<'a> {
         let mut base_directory_buf = self.base_directory.to_path_buf();
         base_directory_buf.push("draft");
 
-        self.fetch_directory(base_directory_buf.as_path(), &mut story_model)?;
+        self.build_story(base_directory_buf.as_path(), &mut story_model)?;
         self.story_model = Some(story_model);
         Ok(())
     }
@@ -57,7 +57,7 @@ impl<'a> FileHandler<'a> {
         self.base_directory = Path::new(base_directory);
     }
 
-    fn fetch_directory(
+    fn build_story(
         &mut self,
         path: &Path,
         partition: &mut StoryModel,
@@ -83,7 +83,7 @@ impl<'a> FileHandler<'a> {
             if let Some(object_name) = stripped_path.to_str() {
                 if entry_path.is_dir() {
                     let mut nested_story_model = StoryModel::new_part(object_name);
-                    self.fetch_directory(entry_path, &mut nested_story_model)?;
+                    self.build_story(entry_path, &mut nested_story_model)?;
                     partition.push(nested_story_model);
                 } else if let Some(extension) = entry_path.extension() {
                     if extension == "mt" {
