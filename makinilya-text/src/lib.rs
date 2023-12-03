@@ -32,5 +32,7 @@ mod parser_tests {
     fn parses_content() {
         let file = MakinilyaParser::parse(Rule::makinilya, "Hello. My name is {{ name }}.");
         assert!(file.is_ok());
+        let file = MakinilyaParser::parse(Rule::makinilya, "Hello. My name is {{ name.long }}.");
+        assert!(file.is_ok());
     }
 }
