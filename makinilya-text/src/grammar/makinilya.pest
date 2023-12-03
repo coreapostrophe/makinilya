@@ -1,6 +1,8 @@
 WHITESPACE           = _{ " " }
-identifier           =  { "_"? ~ ASCII_ALPHA+ ~ ("."? ~ (ASCII_ALPHANUMERIC | "_"))* }
-string_interpolation =  { "{{" ~ (!"}}" ~ identifier) ~ "}}" }
+member_selector      = _{ "." }
+identifier           =  { "_"? ~ ASCII_ALPHA+ ~ (ASCII_ALPHANUMERIC | "_")* }
+variable             = ${ identifier ~ (member_selector ~ identifier)? }
+string_interpolation =  { "{{" ~ (!"}}" ~ variable) ~ "}}" }
 text_content         = ${ (!"{{" ~ ANY)+ }
 expression           =  { string_interpolation | text_content }
 makinilya            =  { SOI ~ expression* ~ EOI }

@@ -1,13 +1,17 @@
 use std::{
+    collections::HashMap,
     fs::{self},
     io,
     path::{Path, PathBuf},
 };
 
 use thiserror::Error;
-use toml::Table;
+use toml::{Table, Value};
 
-use crate::story::StoryModel;
+use crate::{
+    context::{Context, Data},
+    story::Story,
+};
 
 #[derive(Error, Debug)]
 pub enum FileHandlerError {
@@ -22,22 +26,23 @@ pub enum FileHandlerError {
 
     #[error("context cannot be parsed")]
     UnableToParseContext,
+
+    #[error("`DateTime` and `Array` are not supported context values")]
+    UnsupportedContextValue,
 }
 
 #[derive(Debug)]
 pub struct FileHandler;
 
 impl FileHandler {
-    pub fn build_story_model(
-        base_directory: impl Into<PathBuf>,
-    ) -> Result<StoryModel, FileHandlerError> {
-        let mut story_model = StoryModel::new_part("root");
+    pub fn build_story(base_directory: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
+        let mut story_model = Story::new_part("root");
 
-        Self::handle_dir(base_directory.into().as_path(), &mut story_model)?;
+        Self::build_story_from_dir(base_directory.into().as_path(), &mut story_model)?;
         Ok(story_model)
     }
 
-    fn handle_dir(path: &Path, partition: &mut StoryModel) -> Result<(), FileHandlerError> {
+    fn build_story_from_dir(path: &Path, partition: &mut Story) -> Result<(), FileHandlerError> {
         if !path.is_dir() {
             return Err(FileHandlerError::InvalidDirectory(
                 path.to_string_lossy().into_owned(),
@@ -58,15 +63,15 @@ impl FileHandler {
 
             if let Some(object_name) = stripped_path.to_str() {
                 if entry_path.is_dir() {
-                    let mut nested_story_model = StoryModel::new_part(object_name);
-                    Self::handle_dir(entry_path, &mut nested_story_model)?;
+                    let mut nested_story_model = Story::new_part(object_name);
+                    Self::build_story_from_dir(entry_path, &mut nested_story_model)?;
                     partition.push(nested_story_model);
                 } else if let Some(extension) = entry_path.extension() {
                     if extension == "mt" {
                         let file_string = fs::read_to_string(entry_path)
                             .map_err(|error| FileHandlerError::IoException(error))?;
 
-                        partition.push(StoryModel::new_content(object_name, &file_string))
+                        partition.push(Story::new_content(object_name, &file_string))
                     }
                 }
             }
@@ -74,13 +79,44 @@ impl FileHandler {
         Ok(())
     }
 
-    pub fn fetch_context(base_directory: impl Into<PathBuf>) -> Result<Table, FileHandlerError> {
+    pub fn build_context(base_directory: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
         let file_string = fs::read_to_string(base_directory.into().as_path())
             .map_err(|error| FileHandlerError::IoException(error))?;
         let table = file_string
             .parse::<Table>()
             .or(Err(FileHandlerError::UnableToParseContext))?;
-        Ok(table)
+
+        let variables = Self::build_context_variables(table)?;
+
+        Ok(Context { variables })
+    }
+
+    fn build_context_variables(table: Table) -> Result<HashMap<String, Data>, FileHandlerError> {
+        let mut variables = HashMap::new();
+
+        for (key, value) in table.iter() {
+            match value {
+                Value::String(string_value) => {
+                    variables.insert(key.to_owned(), Data::String(string_value.to_owned()));
+                }
+                Value::Integer(integer_value) => {
+                    variables.insert(key.to_owned(), Data::Number(*integer_value as f64));
+                }
+                Value::Float(float_value) => {
+                    variables.insert(key.to_owned(), Data::Number(*float_value));
+                }
+                Value::Boolean(boolean_value) => {
+                    variables.insert(key.to_owned(), Data::Boolean(*boolean_value));
+                }
+                Value::Table(table_value) => {
+                    let object_value = Self::build_context_variables(table_value.to_owned())?;
+                    variables.insert(key.to_owned(), Data::Object(object_value));
+                }
+                _ => return Err(FileHandlerError::UnsupportedContextValue),
+            }
+        }
+
+        Ok(variables)
     }
 }
 
@@ -90,13 +126,13 @@ mod file_tests {
 
     #[test]
     fn builds_story_model() {
-        let result = FileHandler::build_story_model("./mock/draft");
+        let result = FileHandler::build_story("./mock/draft");
         assert!(result.is_ok());
     }
 
     #[test]
     fn fetches_context() {
-        let result = FileHandler::fetch_context("./mock/Context.toml");
+        let result = FileHandler::build_context("./mock/Context.toml");
         assert!(result.is_ok());
     }
 }

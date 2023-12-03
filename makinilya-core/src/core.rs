@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
 use thiserror::Error;
-use toml::Table;
 
 use crate::{
+    context::Context,
     files::{FileHandler, FileHandlerError},
-    story::StoryModel,
+    story::Story,
 };
 
 #[derive(Error, Debug)]
@@ -19,8 +19,8 @@ pub struct MakinilyaConfig {
 }
 
 pub struct MakinilyaCore {
-    story_model: StoryModel,
-    context: Table,
+    story: Story,
+    context: Context,
 }
 
 impl MakinilyaCore {
@@ -30,22 +30,19 @@ impl MakinilyaCore {
         let mut story_directory = config.base_directory.clone();
         story_directory.push("draft");
 
-        let context = FileHandler::fetch_context(context_path)
+        let context = FileHandler::build_context(context_path)
             .map_err(|error| MakinilyaError::FileHandlerException(error))?;
-        let story_model = FileHandler::build_story_model(story_directory)
+        let story = FileHandler::build_story(story_directory)
             .map_err(|error| MakinilyaError::FileHandlerException(error))?;
 
-        Ok(Self {
-            story_model,
-            context,
-        })
+        Ok(Self { story, context })
     }
 
-    pub fn story_model(&self) -> &StoryModel {
-        &self.story_model
+    pub fn story_model(&self) -> &Story {
+        &self.story
     }
 
-    pub fn context(&self) -> &Table {
+    pub fn context(&self) -> &Context {
         &self.context
     }
 }
