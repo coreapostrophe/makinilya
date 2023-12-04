@@ -1,30 +1,58 @@
+use pest::{error::LineColLocation, iterators::Pairs, Parser, RuleType};
 use pest_derive::Parser;
+use thiserror::Error;
 
 #[derive(Parser)]
 #[grammar = "./grammar/makinilya.pest"]
-pub struct MakinilyaParser;
+struct MakinilyaParser;
+
+#[derive(Error, Debug)]
+pub enum MakinilyaTextError {
+    #[error("[line {0}:{1}] {2}")]
+    ParsingError(usize, usize, String),
+}
+
+pub struct MakinilyaText;
+
+impl MakinilyaText {
+    pub fn parse(source: &str) -> Result<Pairs<'_, Rule>, MakinilyaTextError> {
+        MakinilyaParser::parse(Rule::makinilya, source)
+            .map_err(|error| Self::map_parser_error(error))
+    }
+
+    fn map_parser_error<R>(error: pest::error::Error<R>) -> MakinilyaTextError
+    where
+        R: RuleType,
+    {
+        let message = error.variant.message();
+        let (line, col) = match error.line_col {
+            LineColLocation::Pos(line_col) => line_col,
+            _ => (0, 0),
+        };
+        MakinilyaTextError::ParsingError(line, col, message.into())
+    }
+}
 
 #[cfg(test)]
 mod parser_tests {
+    use super::*;
     use pest::Parser;
-
-    use crate::{MakinilyaParser, Rule};
 
     #[test]
     fn parses_string_interpolation() {
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name }}");
+        let file = MakinilyaText::parse("{{ name }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ }}");
+        let file = MakinilyaText::parse("{{ }}");
         assert!(file.is_err());
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ 32 }}");
+        let file = MakinilyaText::parse("{{ 32 }}");
         assert!(file.is_err());
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name32 }}");
+        let file = MakinilyaText::parse("{{ name32 }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name_32 }}");
+        let file = MakinilyaText::parse("{{ name_32 }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name_32.long }}");
+        let file = MakinilyaText::parse("{{ name_32.long }}");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::makinilya, "{{ name_32..long }}");
+        let file = MakinilyaText::parse("{{ name_32..long }}");
         assert!(file.is_err());
     }
 

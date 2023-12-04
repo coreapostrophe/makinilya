@@ -1,8 +1,7 @@
 use std::{
     collections::HashMap,
     fs::{self},
-    io,
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use thiserror::Error;
@@ -18,16 +17,16 @@ pub enum FileHandlerError {
     #[error("path `{0}` is not a valid directory.")]
     InvalidDirectory(String),
 
-    #[error("{0}")]
-    IoException(io::Error),
+    #[error("An unexpected io exception occurred.")]
+    UnexpectedIoException,
 
-    #[error("stripped prefix not found")]
-    PrefixNotFound,
+    #[error("An unexpected strip prefix exception occurred.")]
+    UnexpectedStripPrefixException,
 
-    #[error("context cannot be parsed")]
+    #[error("Context cannot be parsed from directory.")]
     UnableToParseContext,
 
-    #[error("`DateTime` and `Array` are not supported context values")]
+    #[error("`DateTime` and `Array` are not supported context values.")]
     UnsupportedContextValue,
 }
 
@@ -38,40 +37,36 @@ impl FileHandler {
     pub fn build_story(base_directory: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
         let mut story_model = Story::new_part("root");
 
-        Self::build_story_from_dir(base_directory.into().as_path(), &mut story_model)?;
+        Self::build_story_from_dir(base_directory.into(), &mut story_model)?;
         Ok(story_model)
     }
 
-    fn build_story_from_dir(path: &Path, partition: &mut Story) -> Result<(), FileHandlerError> {
+    fn build_story_from_dir(path: PathBuf, partition: &mut Story) -> Result<(), FileHandlerError> {
         if !path.is_dir() {
             return Err(FileHandlerError::InvalidDirectory(
                 path.to_string_lossy().into_owned(),
             ));
         }
 
-        let read_dir = fs::read_dir(path).map_err(|error| FileHandlerError::IoException(error))?;
+        let read_dir = fs::read_dir(&path).or(Err(FileHandlerError::UnexpectedIoException))?;
 
         for entry in read_dir {
-            let entry = entry.map_err(|error| FileHandlerError::IoException(error))?;
-
+            let entry = entry.unwrap();
             let entry_pathbuf = entry.path();
-            let entry_path = entry_pathbuf.as_path();
+            let stripped_path = entry_pathbuf
+                .strip_prefix(&path)
+                .or(Err(FileHandlerError::UnexpectedStripPrefixException))?;
 
-            let stripped_path = entry_path
-                .strip_prefix(path)
-                .or(Err(FileHandlerError::PrefixNotFound))?;
-
-            if let Some(object_name) = stripped_path.to_str() {
-                if entry_path.is_dir() {
-                    let mut nested_story_model = Story::new_part(object_name);
-                    Self::build_story_from_dir(entry_path, &mut nested_story_model)?;
+            if let Some(part_name) = stripped_path.to_str() {
+                if entry_pathbuf.is_dir() {
+                    let mut nested_story_model = Story::new_part(part_name);
+                    Self::build_story_from_dir(entry_pathbuf, &mut nested_story_model)?;
                     partition.push(nested_story_model);
-                } else if let Some(extension) = entry_path.extension() {
+                } else if let Some(extension) = entry_pathbuf.extension() {
                     if extension == "mt" {
-                        let file_string = fs::read_to_string(entry_path)
-                            .map_err(|error| FileHandlerError::IoException(error))?;
-
-                        partition.push(Story::new_content(object_name, &file_string))
+                        let file_string = fs::read_to_string(&entry_pathbuf)
+                            .or(Err(FileHandlerError::UnexpectedIoException))?;
+                        partition.push(Story::new_content(part_name, &file_string))
                     }
                 }
             }
@@ -81,7 +76,7 @@ impl FileHandler {
 
     pub fn build_context(base_directory: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
         let file_string = fs::read_to_string(base_directory.into().as_path())
-            .map_err(|error| FileHandlerError::IoException(error))?;
+            .or(Err(FileHandlerError::UnexpectedIoException))?;
         let table = file_string
             .parse::<Table>()
             .or(Err(FileHandlerError::UnableToParseContext))?;

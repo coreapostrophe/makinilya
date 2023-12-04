@@ -1,19 +1,21 @@
 use std::path::PathBuf;
 
-use makinilya_text::{MakinilyaParser, Rule};
-use pest::Parser;
+use makinilya_text::{MakinilyaText, Rule};
 use thiserror::Error;
 
 use crate::{
     context::{Context, Data},
-    files::{FileHandler, FileHandlerError},
+    files::FileHandler,
     story::Story,
 };
 
 #[derive(Error, Debug)]
 pub enum MakinilyaError {
     #[error("[FileHandler Error]: {0}")]
-    FileHandlerException(FileHandlerError),
+    FileHandlerException(String),
+
+    #[error("[Parser Error]: {0}")]
+    ParserError(String),
 }
 
 pub struct MakinilyaConfig {
@@ -34,9 +36,9 @@ impl MakinilyaCore {
         story_directory.push("draft");
 
         let context = FileHandler::build_context(context_path)
-            .map_err(|error| MakinilyaError::FileHandlerException(error))?;
+            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
         let story = FileHandler::build_story(story_directory)
-            .map_err(|error| MakinilyaError::FileHandlerException(error))?;
+            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
 
         Ok(Self { story, context })
     }
@@ -47,7 +49,7 @@ impl MakinilyaCore {
     }
 
     fn interpolate_content(story: &mut Story, context: &Context) -> Result<(), MakinilyaError> {
-        let mut interpolated_string = String::from("");
+        let mut interpolated_source = String::new();
 
         match story {
             Story::Part { children, .. } => {
@@ -56,8 +58,8 @@ impl MakinilyaCore {
                 }
             }
             Story::Content { source, .. } => {
-                let parsed_source = MakinilyaParser::parse(Rule::makinilya, &source)
-                    .unwrap()
+                let parsed_source = MakinilyaText::parse(&source)
+                    .map_err(|error| MakinilyaError::ParserError(error.to_string()))?
                     .next()
                     .unwrap();
 
@@ -74,6 +76,7 @@ impl MakinilyaCore {
                                     .collect();
 
                                 let mut data = context.variables().get(&identifier_array[0]);
+
                                 for identifier in &identifier_array[1..] {
                                     if let Some(unwrapped_data) = data {
                                         match unwrapped_data {
@@ -86,11 +89,11 @@ impl MakinilyaCore {
                                 }
 
                                 if let Some(unwrapped_data) = data {
-                                    interpolated_string.push_str(&unwrapped_data.to_string());
+                                    interpolated_source.push_str(&unwrapped_data.to_string());
                                 }
                             }
                             Rule::text_content => {
-                                interpolated_string.push_str(expression_value.as_str());
+                                interpolated_source.push_str(expression_value.as_str());
                             }
                             _ => (),
                         }
@@ -100,7 +103,7 @@ impl MakinilyaCore {
         }
 
         match story {
-            Story::Content { source, .. } => *source = interpolated_string,
+            Story::Content { source, .. } => *source = interpolated_source,
             _ => (),
         }
 
