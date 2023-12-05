@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(Error, Debug)]
-pub enum MakinilyaError {
+pub enum Error {
     #[error("[FileHandler Error]: {0}")]
     FileHandlerException(String),
 
@@ -18,7 +18,8 @@ pub enum MakinilyaError {
     ParserError(String),
 }
 
-pub struct MakinilyaConfig {
+#[derive(Debug)]
+pub struct Config {
     base_directory: PathBuf,
 }
 
@@ -26,29 +27,38 @@ pub struct MakinilyaConfig {
 pub struct MakinilyaCore {
     story: Story,
     context: Context,
+    config: Config,
 }
 
 impl MakinilyaCore {
-    pub fn init(config: MakinilyaConfig) -> Result<Self, MakinilyaError> {
+    pub fn init(config: Config) -> Result<Self, Error> {
         let mut context_path = config.base_directory.clone();
         context_path.push("Context.toml");
         let mut story_directory = config.base_directory.clone();
         story_directory.push("draft");
 
         let context = FileHandler::build_context(context_path)
-            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
+            .map_err(|error| Error::FileHandlerException(error.to_string()))?;
         let story = FileHandler::build_story(story_directory)
-            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
+            .map_err(|error| Error::FileHandlerException(error.to_string()))?;
 
-        Ok(Self { story, context })
+        Ok(Self {
+            story,
+            context,
+            config,
+        })
     }
 
-    pub fn interpolate(&mut self) -> Result<(), MakinilyaError> {
+    pub fn build() -> Result<(), Error> {
+        todo!()
+    }
+
+    pub fn interpolate(&mut self) -> Result<(), Error> {
         Self::interpolate_content(&mut self.story, &self.context)?;
         Ok(())
     }
 
-    fn interpolate_content(story: &mut Story, context: &Context) -> Result<(), MakinilyaError> {
+    fn interpolate_content(story: &mut Story, context: &Context) -> Result<(), Error> {
         let mut interpolated_source = String::new();
 
         match story {
@@ -59,7 +69,7 @@ impl MakinilyaCore {
             }
             Story::Content { source, .. } => {
                 let parsed_source = MakinilyaText::parse(&source)
-                    .map_err(|error| MakinilyaError::ParserError(error.to_string()))?
+                    .map_err(|error| Error::ParserError(error.to_string()))?
                     .next()
                     .unwrap();
 
@@ -114,6 +124,10 @@ impl MakinilyaCore {
         &self.story
     }
 
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
+
     pub fn context(&self) -> &Context {
         &self.context
     }
@@ -125,7 +139,7 @@ mod core_tests {
 
     #[test]
     fn extracts_story_and_context() {
-        let result = MakinilyaCore::init(MakinilyaConfig {
+        let result = MakinilyaCore::init(Config {
             base_directory: PathBuf::from("./mock"),
         });
         assert!(result.is_ok());
@@ -133,7 +147,7 @@ mod core_tests {
 
     #[test]
     fn interpolates_story() {
-        let mut core = MakinilyaCore::init(MakinilyaConfig {
+        let mut core = MakinilyaCore::init(Config {
             base_directory: PathBuf::from("./mock"),
         })
         .unwrap();

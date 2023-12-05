@@ -1,13 +1,12 @@
 use pest::{error::LineColLocation, iterators::Pairs, Parser, RuleType};
-use pest_derive::Parser;
 use thiserror::Error;
 
-#[derive(Parser)]
+#[derive(pest_derive::Parser)]
 #[grammar = "./grammar/makinilya.pest"]
-struct MakinilyaParser;
+struct GrammarParser;
 
 #[derive(Error, Debug)]
-pub enum MakinilyaTextError {
+pub enum Error {
     #[error("[line {0}:{1}] {2}")]
     ParsingError(usize, usize, String),
 }
@@ -15,12 +14,11 @@ pub enum MakinilyaTextError {
 pub struct MakinilyaText;
 
 impl MakinilyaText {
-    pub fn parse(source: &str) -> Result<Pairs<'_, Rule>, MakinilyaTextError> {
-        MakinilyaParser::parse(Rule::makinilya, source)
-            .map_err(|error| Self::map_parser_error(error))
+    pub fn parse(source: &str) -> Result<Pairs<'_, Rule>, Error> {
+        GrammarParser::parse(Rule::makinilya, source).map_err(|error| Self::map_parser_error(error))
     }
 
-    fn map_parser_error<R>(error: pest::error::Error<R>) -> MakinilyaTextError
+    fn map_parser_error<R>(error: pest::error::Error<R>) -> Error
     where
         R: RuleType,
     {
@@ -29,7 +27,7 @@ impl MakinilyaText {
             LineColLocation::Pos(line_col) => line_col,
             _ => (0, 0),
         };
-        MakinilyaTextError::ParsingError(line, col, message.into())
+        Error::ParsingError(line, col, message.into())
     }
 }
 
@@ -58,9 +56,9 @@ mod parser_tests {
 
     #[test]
     fn parses_content() {
-        let file = MakinilyaParser::parse(Rule::makinilya, "Hello. My name is {{ name }}.");
+        let file = GrammarParser::parse(Rule::makinilya, "Hello. My name is {{ name }}.");
         assert!(file.is_ok());
-        let file = MakinilyaParser::parse(Rule::makinilya, "Hello. My name is {{ name.long }}.");
+        let file = GrammarParser::parse(Rule::makinilya, "Hello. My name is {{ name.long }}.");
         assert!(file.is_ok());
     }
 }
