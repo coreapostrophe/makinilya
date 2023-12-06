@@ -20,7 +20,7 @@ pub enum Error {
 
 #[derive(Debug)]
 pub struct Config {
-    base_directory: PathBuf,
+    pub base_directory: PathBuf,
 }
 
 #[derive(Debug)]
@@ -120,7 +120,7 @@ impl MakinilyaCore {
         Ok(())
     }
 
-    pub fn story_model(&self) -> &Story {
+    pub fn story(&self) -> &Story {
         &self.story
     }
 

@@ -1,6 +1,6 @@
 use docx_rs::{
-    AlignmentType, Docx, LineSpacing, LineSpacingType, PageMargin, Paragraph, Run, RunFonts, Table,
-    TableCell, TableRow, VAlignType, WidthType,
+    AlignmentType, Docx, LineSpacing, LineSpacingType, PageMargin, Paragraph, Run, RunFonts,
+    SpecialIndentType, Table, TableCell, TableRow, VAlignType, WidthType,
 };
 use thiserror::Error;
 
@@ -75,16 +75,12 @@ impl ManuscriptBuilder {
             .join(",")
     }
 
-    fn paragraph(text: &str) -> Paragraph {
-        Paragraph::new()
-            .size(24)
-            .add_run(Run::new().add_text(text).size(24))
-            .fonts(RunFonts::new().ascii("Times New Roman"))
-    }
-
     fn build_title_page(&self, doc: Docx) -> Docx {
         let top_section_paragraph = |text: &str| {
-            Self::paragraph(text)
+            Paragraph::new()
+                .size(24)
+                .add_run(Run::new().add_text(text).size(24))
+                .fonts(RunFonts::new().ascii("Times New Roman"))
                 .line_spacing(
                     LineSpacing::new()
                         .line_rule(LineSpacingType::Auto)
@@ -94,7 +90,10 @@ impl ManuscriptBuilder {
                 .align(AlignmentType::Left)
         };
         let middle_section_paragraph = |text: &str| {
-            Self::paragraph(text)
+            Paragraph::new()
+                .size(24)
+                .add_run(Run::new().add_text(text).size(24))
+                .fonts(RunFonts::new().ascii("Times New Roman"))
                 .line_spacing(
                     LineSpacing::new()
                         .line_rule(LineSpacingType::Auto)
@@ -104,7 +103,10 @@ impl ManuscriptBuilder {
                 .align(AlignmentType::Center)
         };
         let bottom_section_paragraph = |text: &str| {
-            Self::paragraph(text)
+            Paragraph::new()
+                .size(24)
+                .add_run(Run::new().add_text(text).size(24))
+                .fonts(RunFonts::new().ascii("Times New Roman"))
                 .line_spacing(
                     LineSpacing::new()
                         .line_rule(LineSpacingType::Auto)
@@ -165,12 +167,95 @@ impl ManuscriptBuilder {
         doc.add_table(Table::new(table_rows).width(9360, WidthType::Auto))
     }
 
-    pub fn build(&self, _story: &Story) -> Result<(), Error> {
+    fn chapter_title_paragraph(text: &str) -> Paragraph {
+        Paragraph::new()
+            .size(24)
+            .add_run(Run::new().add_text(text).size(24))
+            .fonts(RunFonts::new().ascii("Times New Roman"))
+            .line_spacing(
+                LineSpacing::new()
+                    .line_rule(LineSpacingType::Auto)
+                    .line(480)
+                    .after(480),
+            )
+            .align(AlignmentType::Center)
+    }
+
+    fn scene_section_paragraph(text: &str) -> Paragraph {
+        Paragraph::new()
+            .size(24)
+            .add_run(Run::new().add_text(text).size(24))
+            .fonts(RunFonts::new().ascii("Times New Roman"))
+            .line_spacing(
+                LineSpacing::new()
+                    .line_rule(LineSpacingType::Auto)
+                    .line(480)
+                    .after(0),
+            )
+            .align(AlignmentType::Left)
+            .indent(None, Some(SpecialIndentType::FirstLine(720)), None, None)
+    }
+
+    fn build_chapters(&self, mut doc: Docx, story: &Story) -> Docx {
+        match story {
+            Story::Part { children, .. } => {
+                for child in children {
+                    doc = self.build_chapter(doc, child)
+                }
+            }
+            _ => (),
+        }
+
+        doc
+    }
+
+    fn build_chapter(&self, mut doc: Docx, story: &Story) -> Docx {
+        match story {
+            Story::Part { title, children } => {
+                doc = doc.add_table(
+                    Table::new(vec![TableRow::new(vec![TableCell::new()
+                        .add_paragraph(Self::chapter_title_paragraph(title))
+                        .vertical_align(VAlignType::Center)])
+                    .row_height(12720.0)])
+                    .clear_all_border()
+                    .width(9360, WidthType::Auto),
+                );
+
+                for child in children {
+                    doc = self.build_chapter(doc, child)
+                }
+            }
+            Story::Content { title, source } => {
+                let splitted_source = source.split("\n");
+
+                doc = doc
+                    .add_paragraph(
+                        Paragraph::new().add_run(Run::new().add_break(docx_rs::BreakType::Page)),
+                    )
+                    .add_table(
+                        Table::new(vec![
+                            TableRow::new(vec![TableCell::new()]).row_height(4320.0)
+                        ])
+                        .clear_all_border(),
+                    )
+                    .add_paragraph(Self::chapter_title_paragraph(&title));
+
+                for paragraph in splitted_source {
+                    doc = doc.add_paragraph(Self::scene_section_paragraph(paragraph));
+                }
+            }
+        }
+
+        doc
+    }
+
+    pub fn build(&self, story: &Story) -> Result<(), Error> {
         let path = std::path::Path::new("./hello.docx");
         let file = std::fs::File::create(&path).unwrap();
 
         let mut doc = self.build_document();
         doc = self.build_title_page(doc);
+        doc = self.build_chapters(doc, story);
 
         doc.build().pack(file).unwrap();
         Ok(())
@@ -179,12 +264,20 @@ impl ManuscriptBuilder {
 
 #[cfg(test)]
 mod builder_tests {
+    use crate::core::{Config, MakinilyaCore};
+
     use super::*;
 
     #[test]
     fn builds_pdf() {
+        let core = MakinilyaCore::init(Config {
+            base_directory: "./mock".into(),
+        })
+        .unwrap();
+
         let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
-        let result = builder.build(&Story::new_part("Root"));
+        let result = builder.build(core.story());
+
         assert!(result.is_ok())
     }
 }

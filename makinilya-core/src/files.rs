@@ -64,9 +64,10 @@ impl FileHandler {
                     partition.push(nested_story_model);
                 } else if let Some(extension) = entry_pathbuf.extension() {
                     if extension == "mt" {
+                        let content_name = part_name.strip_suffix(".mt").unwrap();
                         let file_string = fs::read_to_string(&entry_pathbuf)
                             .or(Err(FileHandlerError::UnexpectedIoException))?;
-                        partition.push(Story::new_content(part_name, &file_string))
+                        partition.push(Story::new_content(content_name, &file_string))
                     }
                 }
             }
