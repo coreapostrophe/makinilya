@@ -77,15 +77,15 @@ is referenced like the following:
 "{{ names.main_character.nick }}! I've looked everywhere for you. Where have you been?" he said.
 ```
 
-The possible values are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects`. To learn more on how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
+>The possible values in the context are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects`. To learn more on how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
 
-Once you're done writing your chapters. All you have to do is build the project. To do that, you need to type the following command on the root of your project.
+Once you're done writing your chapters. All you have to do is build the project. To do that, execute the following command on the root of your project.
 
 ```bash
 makinilya build
 ```
 
-Makinilya will then create a `manuscript.docx` with all of the interpolated strings in a generated `out/` directory.
+Makinilya will then create a `manuscript.docx` file with all of the interpolated content. It is placed inside a generated `out/` directory.
 
 ## Future Plans
 
