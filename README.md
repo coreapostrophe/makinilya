@@ -46,7 +46,7 @@ irm https://github.com/coreapostrophe/makinilya/releases/download/v0.1.0-alpha.1
 
 ## Tutorial
 
-The structure of your project is straightforward. The cli, upon building, will scan the whole directory tree that's inside the `draft/` folder to parse the story. It is necessary that you place all of your final work inside that directory.
+The structure of your project is straightforward. The cli, upon building, will scan the whole directory tree that's inside the `draft/` folder to parse the story. The `.mt` files are where you can write your scenes; the extension is short for `Makinilya Text`. It is necessary that you place all of your final work inside that directory.
 
 Try to base the contents of your project from the tree below:
 
@@ -77,7 +77,7 @@ is referenced like the following:
 "{{ names.main_character.nick }}! I've looked everywhere for you. Where have you been?" he said.
 ```
 
-The possible values are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects` themselves. To learn more on how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
+The possible values are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects`. To learn more on how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
 
 Once you're done writing your chapters. All you have to do is build the project. To do that, you need to type the following command on the root of your project.
 
