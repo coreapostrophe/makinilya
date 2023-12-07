@@ -35,8 +35,7 @@ pub struct FileHandler;
 
 impl FileHandler {
     pub fn build_story(base_directory: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
-        let mut story_model = Story::new_part("root");
-
+        let mut story_model = Story::new("root");
         Self::build_story_from_dir(base_directory.into(), &mut story_model)?;
         Ok(story_model)
     }
@@ -59,15 +58,14 @@ impl FileHandler {
 
             if let Some(part_name) = stripped_path.to_str() {
                 if entry_pathbuf.is_dir() {
-                    let mut nested_story_model = Story::new_part(part_name);
+                    let mut nested_story_model = Story::new(part_name);
                     Self::build_story_from_dir(entry_pathbuf, &mut nested_story_model)?;
-                    partition.push(nested_story_model);
+                    partition.push_part(nested_story_model);
                 } else if let Some(extension) = entry_pathbuf.extension() {
                     if extension == "mt" {
-                        let content_name = part_name.strip_suffix(".mt").unwrap();
                         let file_string = fs::read_to_string(&entry_pathbuf)
                             .or(Err(FileHandlerError::UnexpectedIoException))?;
-                        partition.push(Story::new_content(content_name, &file_string))
+                        partition.push_content(file_string)
                     }
                 }
             }

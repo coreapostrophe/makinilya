@@ -1,34 +1,44 @@
 #[derive(Debug)]
-pub enum Story {
-    Content {
-        title: String,
-        source: String,
-    },
-    Part {
-        title: String,
-        children: Vec<Box<Story>>,
-    },
+pub struct Story {
+    title: String,
+    parts: Vec<Box<Story>>,
+    contents: Vec<String>,
 }
 
 impl Story {
-    pub fn new_part(title: &str) -> Self {
-        Self::Part {
-            title: title.to_owned(),
-            children: vec![],
+    pub fn new(title: impl Into<String>) -> Self {
+        Self {
+            title: title.into(),
+            parts: vec![],
+            contents: vec![],
         }
     }
 
-    pub fn new_content(title: &str, content: &str) -> Self {
-        Self::Content {
-            title: title.to_owned(),
-            source: content.to_owned(),
-        }
+    pub fn push_part(&mut self, part: Story) {
+        self.parts.push(Box::new(part));
     }
 
-    pub fn push(&mut self, story_model: Story) {
-        match self {
-            Self::Part { children, .. } => children.push(Box::new(story_model)),
-            _ => panic!("Tried to push to story model content."),
-        }
+    pub fn push_content(&mut self, source: impl Into<String>) {
+        self.contents.push(source.into());
+    }
+
+    pub fn title(&self) -> &String {
+        &self.title
+    }
+
+    pub fn parts(&self) -> &Vec<Box<Story>> {
+        &self.parts
+    }
+
+    pub fn mut_parts(&mut self) -> &mut Vec<Box<Story>> {
+        &mut self.parts
+    }
+
+    pub fn contents(&self) -> &Vec<String> {
+        &self.contents
+    }
+
+    pub fn mut_contents(&mut self) -> &mut Vec<String> {
+        &mut self.contents
     }
 }

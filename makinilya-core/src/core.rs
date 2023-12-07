@@ -59,62 +59,56 @@ impl MakinilyaCore {
     }
 
     fn interpolate_content(story: &mut Story, context: &Context) -> Result<(), Error> {
-        let mut interpolated_source = String::new();
+        for content in story.mut_contents() {
+            let parsed_source = MakinilyaText::parse(&content)
+                .map_err(|error| Error::ParserError(error.to_string()))?
+                .next()
+                .unwrap();
 
-        match story {
-            Story::Part { children, .. } => {
-                for mut child in children {
-                    Self::interpolate_content(&mut child, context)?;
-                }
-            }
-            Story::Content { source, .. } => {
-                let parsed_source = MakinilyaText::parse(&source)
-                    .map_err(|error| Error::ParserError(error.to_string()))?
-                    .next()
-                    .unwrap();
+            let mut interpolated_source = String::new();
 
-                for expression in parsed_source.into_inner() {
-                    if let Some(expression_value) = expression.into_inner().next() {
-                        match expression_value.as_rule() {
-                            Rule::string_interpolation => {
-                                let identifier_array: Vec<String> = expression_value
-                                    .into_inner()
-                                    .next()
-                                    .unwrap()
-                                    .into_inner()
-                                    .map(|pair| pair.as_str().to_string())
-                                    .collect();
+            for expression in parsed_source.into_inner() {
+                if let Some(expression_value) = expression.into_inner().next() {
+                    match expression_value.as_rule() {
+                        Rule::string_interpolation => {
+                            let identifier_array: Vec<String> = expression_value
+                                .into_inner()
+                                .next()
+                                .unwrap()
+                                .into_inner()
+                                .map(|pair| pair.as_str().to_string())
+                                .collect();
 
-                                let mut data = context.variables().get(&identifier_array[0]);
+                            let mut data = context.variables().get(&identifier_array[0]);
 
-                                for identifier in &identifier_array[1..] {
-                                    if let Some(unwrapped_data) = data {
-                                        match unwrapped_data {
-                                            Data::Object(object_value) => {
-                                                data = object_value.get(identifier);
-                                            }
-                                            _ => (),
+                            for identifier in &identifier_array[1..] {
+                                if let Some(unwrapped_data) = data {
+                                    match unwrapped_data {
+                                        Data::Object(object_value) => {
+                                            data = object_value.get(identifier);
                                         }
+                                        _ => (),
                                     }
                                 }
+                            }
 
-                                if let Some(unwrapped_data) = data {
-                                    interpolated_source.push_str(&unwrapped_data.to_string());
-                                }
+                            if let Some(unwrapped_data) = data {
+                                interpolated_source.push_str(&unwrapped_data.to_string());
                             }
-                            Rule::text_content => {
-                                interpolated_source.push_str(expression_value.as_str());
-                            }
-                            _ => (),
                         }
+                        Rule::text_content => {
+                            interpolated_source.push_str(expression_value.as_str());
+                        }
+                        _ => (),
                     }
                 }
             }
+
+            *content = interpolated_source;
         }
 
-        match story {
-            Story::Content { source, .. } => *source = interpolated_source,
-            _ => (),
+        for part in story.mut_parts() {
+            Self::interpolate_content(part, context)?;
         }
 
         Ok(())
