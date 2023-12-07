@@ -8,19 +8,19 @@
 
 Makinilya is a simple manuscript generator for ascetic writers. It provides a simple string interpolation functionality that aids those free-flowing authors who doesn't want to worry about names or any other arbitrary information in the middle of their writing sessions.
 
-Instead of explicitly naming characters like,
+Instead of explicitly naming characters like this:
 
 ```plaintext
 Hi, my name is Alyssa.
 ```
 
-Makinilya allows you to store the name in a tree context which can then be referenced via `{{ }}` enclosures.
+Makinilya allows you to store the name in a tree-structured context which can then be referenced via `{{ }}` enclosures and provided identifiers.
 
 ```plaintext
 Hi, my name is {{ names.main_character }}
 ```
 
-I often struggle with names myself which is unsurprising, seeing that I'm a programmer. However, with makinilya, I'll be able to refer to characters via their apparent traits or personalities and decide their names later on once they're more developed in the narrative.
+That way, you can change the name at any time.
 
 ## Crates
 
@@ -76,6 +76,8 @@ is referenced like the following:
 ```plaintext
 "{{ names.main_character.nick }}! I've looked everywhere for you. Where have you been?" he said.
 ```
+
+The possible values are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects` themselves. To learn more on how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
 
 Once you're done writing your chapters. All you have to do is build the project. To do that, you need to type the following command on the root of your project.
 
