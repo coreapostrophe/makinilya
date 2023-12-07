@@ -1,9 +1,11 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use makinilya_text::{MakinilyaText, Rule};
+use pest::iterators::Pair;
 use thiserror::Error;
 
 use crate::{
+    builder::{ManuscriptBuilder, ManuscriptBuilderLayout},
     context::{Context, Data},
     files::FileHandler,
     story::Story,
@@ -21,6 +23,20 @@ pub enum Error {
 #[derive(Debug)]
 pub struct Config {
     pub base_directory: PathBuf,
+    pub draft_directory: PathBuf,
+    pub output_path: PathBuf,
+    pub context_path: PathBuf,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            base_directory: "./".into(),
+            draft_directory: "draft".into(),
+            output_path: "./out/manuscript.docx".into(),
+            context_path: "Context.toml".into(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -33,9 +49,12 @@ pub struct MakinilyaCore {
 impl MakinilyaCore {
     pub fn init(config: Config) -> Result<Self, Error> {
         let mut context_path = config.base_directory.clone();
-        context_path.push("Context.toml");
+        context_path.push(&config.context_path);
         let mut story_directory = config.base_directory.clone();
-        story_directory.push("draft");
+        story_directory.push(&config.draft_directory);
+
+        Self::handle_directory(&context_path);
+        Self::handle_directory(&story_directory);
 
         let context = FileHandler::build_context(context_path)
             .map_err(|error| Error::FileHandlerException(error.to_string()))?;
@@ -49,69 +68,96 @@ impl MakinilyaCore {
         })
     }
 
-    pub fn build() -> Result<(), Error> {
-        todo!()
-    }
+    pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), Error> {
+        let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
+        let builder = ManuscriptBuilder::new(builder_layout);
+        let manuscript_document = builder.build(&interpolated_story).unwrap();
 
-    pub fn interpolate(&mut self) -> Result<(), Error> {
-        Self::interpolate_content(&mut self.story, &self.context)?;
+        let mut output_path = self.config.base_directory.clone();
+        output_path.push(&self.config.output_path);
+
+        let mut output_directory = output_path.clone();
+        output_directory.pop();
+
+        Self::handle_directory(&output_directory);
+
+        let file = fs::File::create(&output_path).unwrap();
+        manuscript_document.build().pack(file).unwrap();
+
         Ok(())
     }
 
-    fn interpolate_content(story: &mut Story, context: &Context) -> Result<(), Error> {
+    fn handle_directory(path: impl Into<PathBuf>) {
+        let path: PathBuf = path.into();
+        if !path.exists() {
+            fs::create_dir_all(&path).unwrap();
+        }
+    }
+
+    fn interpolate_story(story: &mut Story, context: &Context) -> Result<Story, Error> {
+        let mut interpolated_story = Story::new(story.title());
+
         for content in story.mut_contents() {
             let parsed_source = MakinilyaText::parse(&content)
                 .map_err(|error| Error::ParserError(error.to_string()))?
                 .next()
                 .unwrap();
+            let expressions = parsed_source.into_inner();
 
-            let mut interpolated_source = String::new();
+            let interpolated_expressions: Vec<String> = expressions
+                .map(|expression| Self::interpolate_expression(expression, context))
+                .collect();
 
-            for expression in parsed_source.into_inner() {
-                if let Some(expression_value) = expression.into_inner().next() {
-                    match expression_value.as_rule() {
-                        Rule::string_interpolation => {
-                            let identifier_array: Vec<String> = expression_value
-                                .into_inner()
-                                .next()
-                                .unwrap()
-                                .into_inner()
-                                .map(|pair| pair.as_str().to_string())
-                                .collect();
-
-                            let mut data = context.variables().get(&identifier_array[0]);
-
-                            for identifier in &identifier_array[1..] {
-                                if let Some(unwrapped_data) = data {
-                                    match unwrapped_data {
-                                        Data::Object(object_value) => {
-                                            data = object_value.get(identifier);
-                                        }
-                                        _ => (),
-                                    }
-                                }
-                            }
-
-                            if let Some(unwrapped_data) = data {
-                                interpolated_source.push_str(&unwrapped_data.to_string());
-                            }
-                        }
-                        Rule::text_content => {
-                            interpolated_source.push_str(expression_value.as_str());
-                        }
-                        _ => (),
-                    }
-                }
-            }
-
-            *content = interpolated_source;
+            interpolated_story.push_content(interpolated_expressions.join(""));
         }
 
         for part in story.mut_parts() {
-            Self::interpolate_content(part, context)?;
+            let interpolated_part = Self::interpolate_story(part, context)?;
+            interpolated_story.push_part(interpolated_part);
         }
 
-        Ok(())
+        Ok(interpolated_story)
+    }
+
+    fn interpolate_expression(expression: Pair<'_, Rule>, context: &Context) -> String {
+        let mut result = String::new();
+
+        if let Some(expression_value) = expression.into_inner().next() {
+            match expression_value.as_rule() {
+                Rule::string_interpolation => {
+                    let mut identifier_array = expression_value
+                        .into_inner()
+                        .next()
+                        .unwrap()
+                        .into_inner()
+                        .map(|pair| pair.as_str());
+
+                    let first_identifier = identifier_array.next().unwrap();
+                    let mut data = context.variables().get(first_identifier);
+
+                    while let Some(identifier) = identifier_array.next() {
+                        if let Some(unwrapped_data) = data {
+                            match unwrapped_data {
+                                Data::Object(object_value) => {
+                                    data = object_value.get(identifier);
+                                }
+                                _ => (),
+                            }
+                        }
+                    }
+
+                    if let Some(unwrapped_data) = data {
+                        result.push_str(&unwrapped_data.to_string());
+                    }
+                }
+                Rule::text_content => {
+                    result.push_str(expression_value.as_str());
+                }
+                _ => (),
+            }
+        }
+
+        result
     }
 
     pub fn story(&self) -> &Story {
@@ -135,16 +181,21 @@ mod core_tests {
     fn extracts_story_and_context() {
         let result = MakinilyaCore::init(Config {
             base_directory: PathBuf::from("./mock"),
+            ..Default::default()
         });
+
         assert!(result.is_ok());
     }
 
     #[test]
-    fn interpolates_story() {
-        let mut core = MakinilyaCore::init(Config {
+    fn builds_manuscript() {
+        let result = MakinilyaCore::init(Config {
             base_directory: PathBuf::from("./mock"),
-        })
-        .unwrap();
-        assert!(core.interpolate().is_ok());
+            ..Default::default()
+        });
+        assert!(result
+            .unwrap()
+            .build(ManuscriptBuilderLayout::default())
+            .is_ok());
     }
 }

@@ -12,6 +12,7 @@ use crate::{
 #[derive(Error, Debug)]
 pub enum Error {}
 
+#[derive(Debug)]
 pub struct ContactInformation {
     pub name: String,
     pub address_1: String,
@@ -20,6 +21,7 @@ pub struct ContactInformation {
     pub email_address: String,
 }
 
+#[derive(Debug)]
 pub struct ParagraphLayout {
     pub font_size_point: f32,
     pub line_spacing_point: f32,
@@ -40,6 +42,7 @@ impl Default for ParagraphLayout {
     }
 }
 
+#[derive(Debug)]
 pub struct ManuscriptBuilderLayout {
     pub title: String,
     pub pen_name: String,
@@ -64,6 +67,7 @@ impl Default for ManuscriptBuilderLayout {
     }
 }
 
+#[derive(Debug)]
 pub struct ManuscriptBuilder {
     pub layout: ManuscriptBuilderLayout,
 }
@@ -212,14 +216,6 @@ impl ManuscriptBuilder {
         doc.add_table(Table::new(table_rows).width(Twip::from_inch(6.5) as usize, WidthType::Auto))
     }
 
-    fn build_chapters(&self, mut doc: Docx, story: &Story) -> Docx {
-        for part in story.parts() {
-            doc = self.build_chapter(doc, part)
-        }
-
-        doc
-    }
-
     fn build_chapter(&self, mut doc: Docx, story: &Story) -> Docx {
         if !story.contents().is_empty() {
             doc = doc
@@ -269,22 +265,6 @@ impl ManuscriptBuilder {
         }
 
         for part in story.parts() {
-            doc = doc.add_table(
-                Table::new(vec![TableRow::new(vec![TableCell::new()
-                    .add_paragraph(Self::paragraph(
-                        part.title(),
-                        ParagraphLayout {
-                            font_size_point: 12.0,
-                            alignment: AlignmentType::Center,
-                            ..Default::default()
-                        },
-                    ))
-                    .vertical_align(VAlignType::Center)])
-                .row_height(Twip::from_inch(8.75))])
-                .clear_all_border()
-                .width(Twip::from_inch(6.5) as usize, WidthType::Auto),
-            );
-
             doc = self.build_chapter(doc, part);
         }
 
@@ -296,7 +276,7 @@ impl ManuscriptBuilder {
 
         let mut doc = self.build_document();
         doc = self.build_title_page(doc, word_count);
-        doc = self.build_chapters(doc, story);
+        doc = self.build_chapter(doc, story);
 
         Ok(doc)
     }
@@ -323,9 +303,5 @@ mod builder_tests {
         let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
         let result = builder.build(&mock_story);
         assert!(result.is_ok());
-
-        // let path = std::path::Path::new("./builds_pdf.docx");
-        // let file = std::fs::File::create(&path).unwrap();
-        // result.unwrap().build().pack(file).unwrap();
     }
 }

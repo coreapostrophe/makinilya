@@ -17,8 +17,8 @@ pub enum FileHandlerError {
     #[error("path `{0}` is not a valid directory.")]
     InvalidDirectory(String),
 
-    #[error("An unexpected io exception occurred.")]
-    UnexpectedIoException,
+    #[error("An unexpected io exception occurred. {0}")]
+    UnexpectedIoException(String),
 
     #[error("An unexpected strip prefix exception occurred.")]
     UnexpectedStripPrefixException,
@@ -34,9 +34,9 @@ pub enum FileHandlerError {
 pub struct FileHandler;
 
 impl FileHandler {
-    pub fn build_story(base_directory: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
+    pub fn build_story(directory: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
         let mut story_model = Story::new("root");
-        Self::build_story_from_dir(base_directory.into(), &mut story_model)?;
+        Self::build_story_from_dir(directory.into(), &mut story_model)?;
         Ok(story_model)
     }
 
@@ -47,7 +47,8 @@ impl FileHandler {
             ));
         }
 
-        let read_dir = fs::read_dir(&path).or(Err(FileHandlerError::UnexpectedIoException))?;
+        let read_dir = fs::read_dir(&path)
+            .map_err(|error| FileHandlerError::UnexpectedIoException(error.to_string()))?;
 
         for entry in read_dir {
             let entry = entry.unwrap();
@@ -63,8 +64,9 @@ impl FileHandler {
                     partition.push_part(nested_story_model);
                 } else if let Some(extension) = entry_pathbuf.extension() {
                     if extension == "mt" {
-                        let file_string = fs::read_to_string(&entry_pathbuf)
-                            .or(Err(FileHandlerError::UnexpectedIoException))?;
+                        let file_string = fs::read_to_string(&entry_pathbuf).map_err(|error| {
+                            FileHandlerError::UnexpectedIoException(error.to_string())
+                        })?;
                         partition.push_content(file_string)
                     }
                 }
@@ -73,16 +75,17 @@ impl FileHandler {
         Ok(())
     }
 
-    pub fn build_context(base_directory: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
-        let file_string = fs::read_to_string(base_directory.into().as_path())
-            .or(Err(FileHandlerError::UnexpectedIoException))?;
+    pub fn build_context(directory: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
+        let file_string = fs::read_to_string(directory.into().as_path())
+            .map_err(|error| FileHandlerError::UnexpectedIoException(error.to_string()))?;
+        
         let table = file_string
             .parse::<Table>()
             .or(Err(FileHandlerError::UnableToParseContext))?;
 
         let variables = Self::build_context_variables(table)?;
 
-        Ok(Context { variables })
+        Ok(Context::from(variables))
     }
 
     fn build_context_variables(table: Table) -> Result<HashMap<String, Data>, FileHandlerError> {

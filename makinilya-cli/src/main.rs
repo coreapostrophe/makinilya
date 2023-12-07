@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
+use makinilya_core::core::{Config, MakinilyaCore};
 
 /// ░█▄█░█▀█░█░█░▀█▀░█▀█░▀█▀░█░░░█░█░█▀█
 /// ░█░█░█▀█░█▀▄░░█░░█░█░░█░░█░░░░█░░█▀█
@@ -21,8 +22,8 @@ use clap::{Parser, Subcommand};
 )]
 struct Cli {
     /// Provides a path to the configuration.
-    #[arg(short, long, verbatim_doc_comment)]
-    config: Option<PathBuf>,
+    // #[arg(short, long, verbatim_doc_comment)]
+    // config: Option<PathBuf>,
 
     #[command(subcommand)]
     subcommand: SubCommands,
@@ -32,21 +33,27 @@ struct Cli {
 enum SubCommands {
     /// Builds the makinilya manuscript
     #[command(verbatim_doc_comment, long_about = None)]
-    Build {
-        /// Provides an explicit path to the project
-        #[arg(short, long)]
-        path: Option<String>,
-    },
+    Build(BuildArgs),
 }
 
-#[derive(Parser, Debug)]
-struct NewArgs {
-    #[arg(short, long)]
-    path: String,
+#[derive(Args, Debug)]
+struct BuildArgs {
+    path: Option<PathBuf>,
 }
 
 fn main() {
-    Cli::parse();
+    let args = Cli::parse();
+
+    match args.subcommand {
+        SubCommands::Build(build_args) => {
+            let mut core = MakinilyaCore::init(Config {
+                base_directory: build_args.path.unwrap_or(Default::default()),
+                ..Default::default()
+            })
+            .unwrap();
+            core.build(Default::default()).unwrap()
+        }
+    }
 }
 
 #[cfg(test)]

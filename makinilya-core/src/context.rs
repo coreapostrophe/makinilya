@@ -35,3 +35,9 @@ impl Context {
         &self.variables
     }
 }
+
+impl From<HashMap<String, Data>> for Context {
+    fn from(value: HashMap<String, Data>) -> Self {
+        Self { variables: value }
+    }
+}

@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Story {
     title: String,
     parts: Vec<Box<Story>>,
