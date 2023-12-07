@@ -1,10 +1,10 @@
 
-## ✒️ Makinilya
+# ✒️ Makinilya
 
 ![Release](https://github.com/coreapostrophe/makinilya/actions/workflows/release.yml/badge.svg) ![Build](https://github.com/coreapostrophe/makinilya/actions/workflows/build.yml/badge.svg)
 ![Makinilya Cover](./assets/makinilya-cover.jpg)
 
-### About
+## About
 
 Makinilya is a simple manuscript generator for ascetic writers. It provides a simple string interpolation functionality that targets those free-flowing authors who wants to  write narratives without worrying about names or any other arbitrary information.
 
@@ -20,13 +20,13 @@ Makinilya allows you to store the name in a tree context which can then be refer
 Hi, my name is {{ names.main_character }}
 ```
 
-### Crates
+## Crates
 
 1. [`makinilya-cli`](./makinilya-cli/) - The main crate that serves the command-line interface of the application.
 2. [`makinilya-core`](./makinilya-core/) - The core crate that contains the functionalities that reads the project, interpolates the content, and builds the manuscript.
 3. [`makinilya-text`](./makinilya-text/) - The laanguage crate that contains the implementation of the parser and its grammar rules.
 
-### Installation
+## Installation
 
 - Install prebuilt binaries via shell script
 
@@ -42,7 +42,7 @@ irm https://github.com/coreapostrophe/makinilya/releases/download/v0.1.0-alpha.1
 
 - Alternatively you can download binary installers in the [releases page](https://github.com/coreapostrophe/makinilya/releases).
 
-### Tutorial
+## Tutorial
 
 The structure of your project is straightforward. The cli, upon building, will scan the whole directory tree that's inside the `draft/` folder to parse the story. It is necessary that you place all of your final work inside that directory.
 
@@ -83,7 +83,7 @@ makinilya build
 
 Makinilya will then create a `manuscript.docx` with all of the interpolated strings in a generated `out/` directory.
 
-### Future Plans
+## Future Plans
 
 The application is currently in alpha and is still wildly unstable. I only created an early release so that I could use it personally on my own writing projects. It's still far from the final release (v1.0.0) as I still have a lot of things I need to check on my list. Before then, aside from additional optimizations, you can anticipate the following features:
 
