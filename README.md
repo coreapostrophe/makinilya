@@ -6,7 +6,7 @@
 
 ## About
 
-Makinilya is a simple manuscript generator for ascetic writers. It provides a simple string interpolation functionality that targets those free-flowing authors who wants to  write narratives without worrying about names or any other arbitrary information.
+Makinilya is a simple manuscript generator for ascetic writers. It provides a simple string interpolation functionality that aids those free-flowing authors who doesn't want to worry about names or any other arbitrary information in the middle of their writing sessions.
 
 Instead of explicitly naming characters like,
 
@@ -19,6 +19,8 @@ Makinilya allows you to store the name in a tree context which can then be refer
 ```plaintext
 Hi, my name is {{ names.main_character }}
 ```
+
+I often struggle with names myself which is unsurprising, seeing that I'm a programmer. However, with makinilya, I'll be able to refer to characters via their apparent traits or personalities and decide their names later on once they're more developed in the narrative.
 
 ## Crates
 
@@ -91,4 +93,4 @@ The application is currently in alpha and is still wildly unstable. I only creat
 - a cli generator command, possibly with the syntax of `makinilya gen [OPTIONS]`, that generates default chapters and scenes.
 - a language server extension for the text content linting and error handling. It will mainly just target issues revolving around context variable resolutions.
 
-After the final release, I also plan to create a cross-platform native text-editor application that syncs the users work along devices.
+After the final release, I also plan to create a cross-platform native text-editor application that syncs the projects across devices.
