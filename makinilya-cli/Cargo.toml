@@ -1,7 +1,16 @@
 [package]
-name = "makinilya-cli"
-version = "0.1.0"
+name = "makinilya"
+version = "0.1.0-alpha.1"
 edition = "2021"
+description = "An austere manuscript generator for writers"
+authors = ["Daveren Cordero <daverencordero@gmail.com>"]
+repository = "https://github.com/coreapostrophe/makinilya"
+
+[package.metadata.wix]
+upgrade-guid = "5C54C2DD-7910-4BA2-A82A-407EFE34076B"
+path-guid = "2C3231A5-60ED-46A6-97C7-9CCCCD1B63C0"
+license = false
+eula = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
