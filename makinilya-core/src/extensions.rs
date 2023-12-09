@@ -1,5 +1,14 @@
+//! Traits for extending implementations from external crates, making 
+//! them more attuned to the crate's use cases. 
+
 use docx_rs::{Paragraph, TableCell};
 
+/// Optionally renders a paragraph to a document structure.
+/// 
+/// Consumes an `Option<Paragraph>` argument that determines whether
+/// or not a paragraph is rendered or not. If the value is `Some`, 
+/// the paragraph will be added to the structure, otherwise, the
+/// operation will be ignored.
 pub trait OptionalParagraph {
     fn add_opt_paragraph(self, p: Option<Paragraph>) -> Self;
 }
@@ -13,6 +22,10 @@ impl OptionalParagraph for TableCell {
     }
 }
 
+/// Separarates a string with commas (,) at every 3rd character.
+/// 
+/// Mainly a utility for numeric strings, this allows the separation
+/// of each digit on a relative thousand place for added readability. 
 pub trait WithThousandsSeparator {
     fn with_thousands_separator(self) -> Self;
 }
@@ -26,28 +39,5 @@ impl WithThousandsSeparator for String {
             .collect::<Result<Vec<&str>, _>>()
             .unwrap()
             .join(",")
-    }
-}
-
-pub struct Twip;
-
-impl Twip {
-    const POINT_TO_TWIP: u32 = 20;
-    const INCH_TO_TWIP: u32 = 1440;
-
-    pub fn from_inch(value: f32) -> f32 {
-        value * Self::INCH_TO_TWIP as f32
-    }
-
-    pub fn from_point(value: f32) -> f32 {
-        value * Self::POINT_TO_TWIP as f32
-    }
-}
-
-pub struct HalfPoint;
-
-impl HalfPoint {
-    pub fn from_point(value: f32) -> f32 {
-        value * 2.0
     }
 }

@@ -4,10 +4,7 @@ use docx_rs::{
 };
 use thiserror::Error;
 
-use crate::{
-    story::Story,
-    utility::{HalfPoint, OptionalParagraph, Twip, WithThousandsSeparator},
-};
+use crate::{story::Story, units::{HalfPoint, Twip}, extensions::{OptionalParagraph, WithThousandsSeparator}};
 
 #[derive(Error, Debug)]
 pub enum Error {}
@@ -81,22 +78,22 @@ impl ManuscriptBuilder {
         Paragraph::new()
             .align(layout.alignment)
             .fonts(RunFonts::new().ascii("Times New Roman"))
-            .size(HalfPoint::from_point(layout.font_size_point) as usize)
+            .size(HalfPoint::from_point(layout.font_size_point).into())
             .add_run(
                 Run::new()
                     .add_text(text)
-                    .size(HalfPoint::from_point(layout.font_size_point) as usize),
+                    .size(HalfPoint::from_point(layout.font_size_point).into()),
             )
             .line_spacing(
                 LineSpacing::new()
                     .line_rule(LineSpacingType::Auto)
-                    .line(Twip::from_point(layout.line_spacing_point) as u32)
-                    .after(Twip::from_point(layout.after_line_spacing_point) as u32),
+                    .line(Twip::from_point(layout.line_spacing_point).into())
+                    .after(Twip::from_point(layout.after_line_spacing_point).into()),
             )
             .indent(
                 None,
                 Some(SpecialIndentType::FirstLine(
-                    Twip::from_inch(layout.first_line_indention_inch) as i32,
+                    Twip::from_inch(layout.first_line_indention_inch).into(),
                 )),
                 None,
                 None,
@@ -123,13 +120,13 @@ impl ManuscriptBuilder {
 
     fn build_document(&self) -> Docx {
         Docx::new()
-            .page_size(Twip::from_inch(8.5) as u32, Twip::from_inch(11.0) as u32)
+            .page_size(Twip::from_inch(8.5).into(), Twip::from_inch(11.0).into())
             .page_margin(
                 PageMargin::new()
-                    .top(Twip::from_inch(1.0) as i32)
-                    .bottom(Twip::from_inch(1.0) as i32)
-                    .left(Twip::from_inch(1.0) as i32)
-                    .right(Twip::from_inch(1.0) as i32),
+                    .top(Twip::from_inch(1.0).into())
+                    .bottom(Twip::from_inch(1.0).into())
+                    .left(Twip::from_inch(1.0).into())
+                    .right(Twip::from_inch(1.0).into()),
             )
     }
 
@@ -187,14 +184,14 @@ impl ManuscriptBuilder {
                 .add_opt_paragraph(top_paragraph(Some(
                     &contact_information.email_address,
                 )))])
-            .row_height(Twip::from_inch(9.0 / 3.0)),
+            .row_height(Twip::from_inch(9.0 / 3.0).into()),
             TableRow::new(vec![TableCell::new()
                 .clear_all_border()
                 .vertical_align(VAlignType::Center)
                 .add_opt_paragraph(middle_paragraph(Some(&title)))
                 .add_opt_paragraph(middle_paragraph(Some(&contact_information.name)))
                 .add_opt_paragraph(middle_paragraph(Some(&word_count)))])
-            .row_height(Twip::from_inch(9.0 / 3.0)),
+            .row_height(Twip::from_inch(9.0 / 3.0).into()),
         ];
 
         if let Some(agent_information) = &self.layout.agent_information {
@@ -209,11 +206,11 @@ impl ManuscriptBuilder {
                     .add_opt_paragraph(bottom_paragraph(Some(
                         &agent_information.email_address,
                     )))])
-                .row_height(Twip::from_inch(9.0 / 3.0)),
+                .row_height(Twip::from_inch(9.0 / 3.0).into()),
             )
         }
 
-        doc.add_table(Table::new(table_rows).width(Twip::from_inch(6.5) as usize, WidthType::Auto))
+        doc.add_table(Table::new(table_rows).width(Twip::from_inch(6.5).into(), WidthType::Auto))
     }
 
     fn build_chapter(&self, mut doc: Docx, story: &Story) -> Docx {
@@ -224,7 +221,7 @@ impl ManuscriptBuilder {
                 )
                 .add_table(
                     Table::new(vec![TableRow::new(vec![TableCell::new()])
-                        .row_height(Twip::from_inch(9.0 / 3.0))])
+                        .row_height(Twip::from_inch(9.0 / 3.0).into())])
                     .clear_all_border(),
                 )
                 .add_paragraph(Self::paragraph(
