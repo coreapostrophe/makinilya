@@ -2,18 +2,21 @@
 
 /// Data structure that represents the story.
 /// 
-/// Parts are organizational sections of the stories,
-/// also depicted as Chapters, or Acts. The content are
-/// the actual scenes within such parts. They contain the
-/// actual narrative. The whole story is built from a 
-/// combination of parts and content. 
+/// - `Parts` are organizational sections of the story, they
+/// can also be called as Chapters, or Acts. 
+/// - `Contents` are the actual scenes within such parts, and 
+/// contains the actual narrative. 
+/// 
+/// The whole story, itself, is a part that we conventionally
+/// entitle "root". It comprises a combination of parts and 
+/// contents.
 /// 
 /// 
 /// # Examples
 /// ```
 /// use makinilya_core::story::Story;
 /// 
-/// let mut story = Story::new("Root");
+/// let mut story = Story::new("root");
 /// 
 /// let mut part = Story::new("Chapter 1");
 /// part.push_content("I'm the first scene.");

@@ -1,5 +1,2 @@
 [names]
-the_precocious = { short = "Alyssa", nick = "Aly", long = "Alyssa Grandau" }
-
-[places]
-empire = { short = "Empyria" }
+main = { first = "Core", last = "Apostrophe", full = "Core Apostrophe" }

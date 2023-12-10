@@ -1,9 +1,10 @@
 //! Structs for units used in the Office Open XML (OOXML)
 //! specification.
 //!
-//! The conversion values were taken from the
-//! [Open XML SDK](https://learn.microsoft.com/en-us/office/open-xml/open-xml-sdk)
+//! The conversion values were taken from the [Open XML SDK]
 //! from Microsoft.
+//! 
+//! [Open XML SDK]: https://learn.microsoft.com/en-us/office/open-xml/open-xml-sdk
 
 /// A unit that equates to one-twentieth of an imperial point,
 /// hence "twip". It is 1/1440 of an inch.

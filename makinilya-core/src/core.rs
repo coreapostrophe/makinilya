@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum MakinilyaError {
     #[error("[FileHandler Error]: {0}")]
     FileHandlerException(String),
 
@@ -47,7 +47,7 @@ pub struct MakinilyaCore {
 }
 
 impl MakinilyaCore {
-    pub fn init(config: Config) -> Result<Self, Error> {
+    pub fn init(config: Config) -> Result<Self, MakinilyaError> {
         let mut context_path = config.base_directory.clone();
         context_path.push(&config.context_path);
         let mut story_directory = config.base_directory.clone();
@@ -57,9 +57,9 @@ impl MakinilyaCore {
         Self::handle_directory(&story_directory);
 
         let context = FileHandler::build_context(context_path)
-            .map_err(|error| Error::FileHandlerException(error.to_string()))?;
+            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
         let story = FileHandler::build_story(story_directory)
-            .map_err(|error| Error::FileHandlerException(error.to_string()))?;
+            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
 
         Ok(Self {
             story,
@@ -68,7 +68,7 @@ impl MakinilyaCore {
         })
     }
 
-    pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), Error> {
+    pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), MakinilyaError> {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
         let builder = ManuscriptBuilder::new(builder_layout);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
@@ -94,12 +94,12 @@ impl MakinilyaCore {
         }
     }
 
-    fn interpolate_story(story: &mut Story, context: &Context) -> Result<Story, Error> {
+    fn interpolate_story(story: &mut Story, context: &Context) -> Result<Story, MakinilyaError> {
         let mut interpolated_story = Story::new(story.title());
 
         for content in story.mut_contents() {
             let parsed_source = MakinilyaText::parse(&content)
-                .map_err(|error| Error::ParserError(error.to_string()))?
+                .map_err(|error| MakinilyaError::ParserError(error.to_string()))?
                 .next()
                 .unwrap();
             let expressions = parsed_source.into_inner();

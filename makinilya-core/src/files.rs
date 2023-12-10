@@ -1,7 +1,10 @@
+//! Structs that handle the project files
+
 use std::{
     collections::HashMap,
     fs::{self},
-    path::PathBuf,
+    io,
+    path::{PathBuf, StripPrefixError},
 };
 
 use thiserror::Error;
@@ -14,78 +17,114 @@ use crate::{
 
 #[derive(Error, Debug)]
 pub enum FileHandlerError {
-    #[error("path `{0}` is not a valid directory.")]
-    InvalidDirectory(String),
+    #[error("`{path}` is not a valid directory.")]
+    InvalidDirectory { path: String },
 
-    #[error("An unexpected io exception occurred. {0}")]
-    UnexpectedIoException(String),
+    #[error("Unable to obtain directory name.")]
+    DirectoryNameException,
 
-    #[error("An unexpected strip prefix exception occurred.")]
-    UnexpectedStripPrefixException,
+    #[error("Can't parse directory name to string.")]
+    StringDirectoryName,
 
-    #[error("Context cannot be parsed from directory.")]
+    #[error("Context is not a valid toml file.")]
     UnableToParseContext,
 
     #[error("`DateTime` and `Array` are not supported context values.")]
     UnsupportedContextValue,
+
+    #[error(transparent)]
+    IoException(#[from] io::Error),
+
+    #[error(transparent)]
+    StripPrefixException(#[from] StripPrefixError),
 }
 
+pub const MAKINILYA_TEXT_EXTENSION: &str = "mt";
+
+
+/// Unit struct that holds static functions that reads file
+/// paths. 
+/// 
+/// The `FileHandler` has two main use cases. Building a story
+/// structure from the project draft, and fetching all external
+/// configurations. 
 #[derive(Debug)]
 pub struct FileHandler;
 
 impl FileHandler {
-    pub fn build_story(directory: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
-        let mut story_model = Story::new("root");
-        Self::build_story_from_dir(directory.into(), &mut story_model)?;
-        Ok(story_model)
+    /// Builds a story from a provided path argument.
+    /// 
+    /// This static function extracts all makinilya text files and 
+    /// stores them inside a `Story` struct.
+    /// 
+    /// # Examples
+    /// ```
+    /// use makinilya_core::files::FileHandler;
+    /// 
+    /// let story = FileHandler::build_story("./");
+    /// ```
+    pub fn build_story(path: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
+        let story = Self::build_story_from_dir(path.into())?;
+        Ok(story)
     }
 
-    fn build_story_from_dir(path: PathBuf, partition: &mut Story) -> Result<(), FileHandlerError> {
-        if !path.is_dir() {
-            return Err(FileHandlerError::InvalidDirectory(
-                path.to_string_lossy().into_owned(),
-            ));
+    fn build_story_from_dir(path: PathBuf) -> Result<Story, FileHandlerError> {
+        if !path.exists() || !path.is_dir() {
+            let path = path.to_string_lossy().into_owned();
+            return Err(FileHandlerError::InvalidDirectory { path });
         }
 
-        let read_dir = fs::read_dir(&path)
-            .map_err(|error| FileHandlerError::UnexpectedIoException(error.to_string()))?;
+        let directory_name = path
+            .file_name()
+            .ok_or(FileHandlerError::DirectoryNameException)?
+            .to_str()
+            .ok_or(FileHandlerError::StringDirectoryName)?;
+
+        let mut story = Story::new(directory_name);
+        let read_dir = fs::read_dir(&path).map_err(|error| FileHandlerError::IoException(error))?;
 
         for entry in read_dir {
-            let entry = entry.unwrap();
-            let entry_pathbuf = entry.path();
-            let stripped_path = entry_pathbuf
-                .strip_prefix(&path)
-                .or(Err(FileHandlerError::UnexpectedStripPrefixException))?;
+            let entry = entry.map_err(|error| FileHandlerError::IoException(error))?;
+            let entry_path = entry.path();
 
-            if let Some(part_name) = stripped_path.to_str() {
-                if entry_pathbuf.is_dir() {
-                    let mut nested_story_model = Story::new(part_name);
-                    Self::build_story_from_dir(entry_pathbuf, &mut nested_story_model)?;
-                    partition.push_part(nested_story_model);
-                } else if let Some(extension) = entry_pathbuf.extension() {
-                    if extension == "mt" {
-                        let file_string = fs::read_to_string(&entry_pathbuf).map_err(|error| {
-                            FileHandlerError::UnexpectedIoException(error.to_string())
-                        })?;
-                        partition.push_content(file_string)
-                    }
+            if entry_path.is_dir() {
+                let nested_story = Self::build_story_from_dir(entry_path)?;
+                story.push_part(nested_story);
+            } else if let Some(extension) = entry_path.extension() {
+                if extension == MAKINILYA_TEXT_EXTENSION {
+                    let file_content_string = fs::read_to_string(&entry_path)
+                        .map_err(|error| FileHandlerError::IoException(error))?;
+                    story.push_content(file_content_string)
                 }
             }
         }
-        Ok(())
+
+        Ok(story)
     }
 
-    pub fn build_context(directory: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
-        let file_string = fs::read_to_string(directory.into().as_path())
-            .map_err(|error| FileHandlerError::UnexpectedIoException(error.to_string()))?;
-        
+    /// Builds the story context from provided path argument.
+    /// 
+    /// This static function reads the context file path and parses
+    /// all of its values into a `Context` struct. 
+    /// 
+    /// # Examples
+    /// ```
+    /// use makinilya_core::files::FileHandler;
+    /// 
+    /// let story = FileHandler::build_context("./Context.toml");
+    /// ```
+    pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
+        let file_string = fs::read_to_string(path.into().as_path())
+            .map_err(|error| FileHandlerError::IoException(error))?;
+
         let table = file_string
             .parse::<Table>()
             .or(Err(FileHandlerError::UnableToParseContext))?;
 
         let variables = Self::build_context_variables(table)?;
+        let context = Context::from(variables);
 
-        Ok(Context::from(variables))
+        Ok(context)
     }
 
     fn build_context_variables(table: Table) -> Result<HashMap<String, Data>, FileHandlerError> {
@@ -120,16 +159,19 @@ impl FileHandler {
 #[cfg(test)]
 mod file_tests {
     use super::*;
+    use std::env;
 
     #[test]
     fn builds_story_model() {
-        let result = FileHandler::build_story("./mock/draft");
+        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "\\mock\\draft";
+        let result = FileHandler::build_story(mock_path);
         assert!(result.is_ok());
     }
 
     #[test]
     fn fetches_context() {
-        let result = FileHandler::build_context("./mock/Context.toml");
+        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "\\mock\\Context.toml";
+        let result = FileHandler::build_context(mock_path);
         assert!(result.is_ok());
     }
 }
