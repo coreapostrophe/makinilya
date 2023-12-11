@@ -61,7 +61,9 @@ impl FileHandler {
     /// ```
     /// use makinilya_core::files::FileHandler;
     /// 
-    /// let story = FileHandler::build_story("./");
+    /// let story = FileHandler::build_story("./mock");
+    /// 
+    /// assert!(story.is_ok());
     /// ```
     pub fn build_story(path: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
         let story = Self::build_story_from_dir(path.into())?;

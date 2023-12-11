@@ -1,1 +1,1 @@
-Hello, my name is {{ names.the_precocious.short }}.
+Hello, my name is {{ names.author.full }}, short for {{ names.author.short }}. 

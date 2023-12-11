@@ -1,2 +1,2 @@
 [names]
-main = { first = "Core", last = "Apostrophe", full = "Core Apostrophe" }
+author = { first = "Mark", last = "Lopez", full = "Mark Lopez" }

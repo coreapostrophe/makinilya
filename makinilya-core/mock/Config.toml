@@ -1,3 +1,7 @@
+[story]
+title = "Mock Story"
+pen_name = "Brutus Ellis"
+
 [author]
 name = "Brutus Ellis"
 mobile = "+63 895 053 4757"
@@ -6,3 +10,8 @@ address_2 = "Barangay Olympia, Makati City"
 email_address = "brutusellis@email.com"
 
 [agent]
+name = "Cymone Sabina"
+mobile = "+63 908 524 4125"
+address_1 = "755 Maria Clara Street"
+address_2 = "Mandaluyong City"
+email_address = "cymonesabina.@email.com"

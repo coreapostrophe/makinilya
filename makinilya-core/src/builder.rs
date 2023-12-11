@@ -1,3 +1,5 @@
+//! Structs and implementations for building the manuscript
+
 use docx_rs::{
     AlignmentType, Docx, LineSpacing, LineSpacingType, PageMargin, Paragraph, Run, RunFonts,
     SpecialIndentType, Table, TableCell, TableRow, VAlignType, WidthType,
@@ -64,6 +66,21 @@ impl Default for ManuscriptBuilderLayout {
     }
 }
 
+/// Builds the manuscript.
+/// 
+/// Stores a `layout` field that contains all of the title page information,
+/// and builds the a `manuscript.docx` file from a provided `Story` struct.
+/// 
+/// # Example
+/// ```
+/// use makinilya_core::{builder::ManuscriptBuilder, files::FileHandler};
+/// 
+/// let builder = ManuscriptBuilder::new(Default::default());
+/// let story = FileHandler::build_story("./mock").unwrap();
+/// let result = builder.build(&story);
+/// 
+/// assert!(result.is_ok());
+/// ```
 #[derive(Debug)]
 pub struct ManuscriptBuilder {
     pub layout: ManuscriptBuilderLayout,
