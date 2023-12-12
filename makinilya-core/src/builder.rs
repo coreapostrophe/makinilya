@@ -9,7 +9,7 @@ use thiserror::Error;
 use crate::{story::Story, units::{HalfPoint, Twip}, extensions::{OptionalParagraph, WithThousandsSeparator}};
 
 #[derive(Error, Debug)]
-pub enum Error {}
+pub enum BuilderError {}
 
 #[derive(Debug)]
 pub struct ContactInformation {
@@ -285,7 +285,11 @@ impl ManuscriptBuilder {
         doc
     }
 
-    pub fn build(&self, story: &Story) -> Result<Docx, Error> {
+    /// Builds manuscript from a `Story` struct. Returns a `Docx` struct
+    /// that can be written to a file via the [`docx-rs`] library.
+    /// 
+    /// [`docx-rs`]: https://github.com/bokuweb/docx-rs
+    pub fn build(&self, story: &Story) -> Result<Docx, BuilderError> {
         let word_count = Self::word_count(story);
 
         let mut doc = self.build_document();

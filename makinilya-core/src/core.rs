@@ -1,3 +1,5 @@
+//! Handles all mainline operations of the application
+
 use std::{fs, path::PathBuf};
 
 use makinilya_text::{MakinilyaText, Rule};
@@ -39,6 +41,23 @@ impl Default for Config {
     }
 }
 
+/// A struct for initializing the script.
+///
+/// Consumes a configuration and contains static functions and
+/// methods that not only builds the `Story` and `Context` from
+/// provided paths, but also the docx manuscript.
+///
+/// # Examples
+/// ```
+/// use makinilya_core::core::MakinilyaCore;
+/// 
+/// let story = MakinilyaCore::init(Config {
+///    base_directory: PathBuf::from("./mock"),
+///    ..Default::default()
+/// });
+///
+/// assert!(story.is_ok());
+/// ```
 #[derive(Debug)]
 pub struct MakinilyaCore {
     story: Story,
@@ -47,6 +66,10 @@ pub struct MakinilyaCore {
 }
 
 impl MakinilyaCore {
+    /// Initializes the story and context of the project.
+    /// 
+    /// This function consumes the path provided by the configuration
+    /// and builds a `Story` and `Context` struct out of them. 
     pub fn init(config: Config) -> Result<Self, MakinilyaError> {
         let mut context_path = config.base_directory.clone();
         context_path.push(&config.context_path);
@@ -68,6 +91,13 @@ impl MakinilyaCore {
         })
     }
 
+    /// Interpolates the story and builds the manuscript
+    /// 
+    /// The story of the project is interpolated with the context 
+    /// variables to create its final draft. The core then passes the
+    /// interpolated story to the builder which then creates the 
+    /// docx file. Afterwards, the document is written to a system 
+    /// file based on the path provided from the configuration.
     pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), MakinilyaError> {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
         let builder = ManuscriptBuilder::new(builder_layout);
