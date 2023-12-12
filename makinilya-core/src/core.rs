@@ -49,7 +49,8 @@ impl Default for Config {
 ///
 /// # Examples
 /// ```
-/// use makinilya_core::core::MakinilyaCore;
+/// use makinilya_core::core::{MakinilyaCore, Config};
+/// use std::path::PathBuf;
 /// 
 /// let story = MakinilyaCore::init(Config {
 ///    base_directory: PathBuf::from("./mock"),
