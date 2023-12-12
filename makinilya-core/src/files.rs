@@ -41,28 +41,27 @@ pub enum FileHandlerError {
 
 pub const MAKINILYA_TEXT_EXTENSION: &str = "mt";
 
-
 /// Unit struct that holds static functions that reads file
-/// paths. 
-/// 
+/// paths.
+///
 /// The `FileHandler` has two main use cases. Building a story
 /// structure from the project draft, and fetching all external
-/// configurations. 
+/// configurations.
 #[derive(Debug)]
 pub struct FileHandler;
 
 impl FileHandler {
     /// Builds a story from a provided path argument.
-    /// 
-    /// This static function extracts all makinilya text files and 
+    ///
+    /// This static function extracts all makinilya text files and
     /// stores them inside a `Story` struct.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use makinilya_core::files::FileHandler;
-    /// 
+    ///
     /// let story = FileHandler::build_story("./mock");
-    /// 
+    ///
     /// assert!(story.is_ok());
     /// ```
     pub fn build_story(path: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
@@ -105,14 +104,14 @@ impl FileHandler {
     }
 
     /// Builds the story context from provided path argument.
-    /// 
+    ///
     /// This static function reads the context file path and parses
-    /// all of its values into a `Context` struct. 
-    /// 
+    /// all of its values into a `Context` struct.
+    ///
     /// # Examples
     /// ```
     /// use makinilya_core::files::FileHandler;
-    /// 
+    ///
     /// let story = FileHandler::build_context("./Context.toml");
     /// ```
     pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
@@ -165,14 +164,16 @@ mod file_tests {
 
     #[test]
     fn builds_story_model() {
-        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "\\mock\\draft";
+        let mut mock_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        mock_path.push("/mock/draft");
         let result = FileHandler::build_story(mock_path);
         assert!(result.is_ok());
     }
 
     #[test]
     fn fetches_context() {
-        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "\\mock\\Context.toml";
+        let mut mock_path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        mock_path.push("/mock/Context.toml");
         println!("{:#?}", mock_path);
         let result = FileHandler::build_context(mock_path);
         println!("{:#?}", result);
