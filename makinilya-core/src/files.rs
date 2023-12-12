@@ -173,7 +173,9 @@ mod file_tests {
     #[test]
     fn fetches_context() {
         let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "\\mock\\Context.toml";
+        println!("{:#?}", mock_path);
         let result = FileHandler::build_context(mock_path);
+        println!("{:#?}", result);
         assert!(result.is_ok());
     }
 }
