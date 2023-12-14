@@ -5,3 +5,4 @@ pub mod files;
 pub mod story;
 pub mod units;
 pub mod extensions;
+pub mod config;

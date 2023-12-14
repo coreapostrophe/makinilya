@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
-use makinilya_core::core::{Config, MakinilyaCore};
+use makinilya_core::{
+    config::{Config, ProjectConfig},
+    core::MakinilyaCore,
+};
 
 /// ░█▄█░█▀█░█░█░▀█▀░█▀█░▀█▀░█░░░█░█░█▀█
 /// ░█░█░█▀█░█▀▄░░█░░█░█░░█░░█░░░░█░░█▀█
@@ -47,7 +50,10 @@ fn main() {
     match args.subcommand {
         SubCommands::Build(build_args) => {
             let mut core = MakinilyaCore::init(Config {
-                base_directory: build_args.path.unwrap_or(Default::default()),
+                project_config: ProjectConfig {
+                    base_directory: build_args.path.unwrap_or(Default::default()),
+                    ..Default::default()
+                },
                 ..Default::default()
             })
             .unwrap();

@@ -6,7 +6,7 @@ use thiserror::Error;
 struct GrammarParser;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum MakinilyaTextError {
     #[error("[line {0}:{1}] {2}")]
     ParsingError(usize, usize, String),
 }
@@ -14,11 +14,11 @@ pub enum Error {
 pub struct MakinilyaText;
 
 impl MakinilyaText {
-    pub fn parse(source: &str) -> Result<Pairs<'_, Rule>, Error> {
+    pub fn parse(source: &str) -> Result<Pairs<'_, Rule>, MakinilyaTextError> {
         GrammarParser::parse(Rule::makinilya, source).map_err(|error| Self::map_parser_error(error))
     }
 
-    fn map_parser_error<R>(error: pest::error::Error<R>) -> Error
+    fn map_parser_error<R>(error: pest::error::Error<R>) -> MakinilyaTextError
     where
         R: RuleType,
     {
@@ -27,7 +27,7 @@ impl MakinilyaText {
             LineColLocation::Pos(line_col) => line_col,
             _ => (0, 0),
         };
-        Error::ParsingError(line, col, message.into())
+        MakinilyaTextError::ParsingError(line, col, message.into())
     }
 }
 

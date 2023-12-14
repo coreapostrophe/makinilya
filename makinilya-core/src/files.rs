@@ -11,6 +11,7 @@ use thiserror::Error;
 use toml::{Table, Value};
 
 use crate::{
+    config::Config,
     context::{Context, Data},
     story::Story,
 };
@@ -41,28 +42,27 @@ pub enum FileHandlerError {
 
 pub const MAKINILYA_TEXT_EXTENSION: &str = "mt";
 
-
 /// Unit struct that holds static functions that reads file
-/// paths. 
-/// 
+/// paths.
+///
 /// The `FileHandler` has two main use cases. Building a story
 /// structure from the project draft, and fetching all external
-/// configurations. 
+/// configurations.
 #[derive(Debug)]
 pub struct FileHandler;
 
 impl FileHandler {
     /// Builds a story from a provided path argument.
-    /// 
-    /// This static function extracts all makinilya text files and 
+    ///
+    /// This static function extracts all makinilya text files and
     /// stores them inside a `Story` struct.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use makinilya_core::files::FileHandler;
-    /// 
+    ///
     /// let story = FileHandler::build_story("./mock");
-    /// 
+    ///
     /// assert!(story.is_ok());
     /// ```
     pub fn build_story(path: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
@@ -105,14 +105,14 @@ impl FileHandler {
     }
 
     /// Builds the story context from provided path argument.
-    /// 
+    ///
     /// This static function reads the context file path and parses
-    /// all of its values into a `Context` struct. 
-    /// 
+    /// all of its values into a `Context` struct.
+    ///
     /// # Examples
     /// ```
     /// use makinilya_core::files::FileHandler;
-    /// 
+    ///
     /// let story = FileHandler::build_context("./Context.toml");
     /// ```
     pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
@@ -155,6 +155,118 @@ impl FileHandler {
         }
 
         Ok(variables)
+    }
+
+    fn set_value<'a, T: From<&'a String>>(field: &mut T, value: Option<&'a Value>) {
+        if let Some(value) = value {
+            match value {
+                Value::String(string_value) => {
+                    *field = string_value.into();
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn set_option_value<'a, T: From<&'a String>>(field: &mut Option<T>, value: Option<&'a Value>) {
+        if let Some(value) = value {
+            match value {
+                Value::String(string_value) => {
+                    *field = Some(string_value.into());
+                }
+                _ => (),
+            }
+        }
+    }
+
+    pub fn build_config(path: impl Into<PathBuf>) -> Result<Config, FileHandlerError> {
+        let file_string = fs::read_to_string(path.into().as_path())
+            .map_err(|error| FileHandlerError::IoException(error))?;
+
+        let table = file_string
+            .parse::<Table>()
+            .or(Err(FileHandlerError::UnableToParseContext))?;
+
+        let mut config = Config::default();
+
+        if let Some(story_table) = table.get("story") {
+            Self::set_value(&mut config.builder_layout.title, story_table.get("title"));
+            Self::set_value(
+                &mut config.builder_layout.pen_name,
+                story_table.get("pen_name"),
+            );
+        }
+
+        if let Some(author_table) = table.get("author") {
+            Self::set_value(
+                &mut config.builder_layout.contact_information.name,
+                author_table.get("name"),
+            );
+            Self::set_option_value(
+                &mut config.builder_layout.contact_information.mobile_number,
+                author_table.get("mobile_number"),
+            );
+            Self::set_value(
+                &mut config.builder_layout.contact_information.address_1,
+                author_table.get("address_1"),
+            );
+            Self::set_option_value(
+                &mut config.builder_layout.contact_information.address_2,
+                author_table.get("address_2"),
+            );
+            Self::set_value(
+                &mut config.builder_layout.contact_information.email_address,
+                author_table.get("email_address"),
+            );
+        }
+
+        if let Some(agent_table) = table.get("agent") {
+            Self::set_value(
+                &mut config.builder_layout.contact_information.name,
+                agent_table.get("name"),
+            );
+            Self::set_option_value(
+                &mut config.builder_layout.contact_information.mobile_number,
+                agent_table.get("mobile_number"),
+            );
+            Self::set_value(
+                &mut config.builder_layout.contact_information.address_1,
+                agent_table.get("address_1"),
+            );
+            Self::set_option_value(
+                &mut config.builder_layout.contact_information.address_2,
+                agent_table.get("address_2"),
+            );
+            Self::set_value(
+                &mut config.builder_layout.contact_information.email_address,
+                agent_table.get("email_address"),
+            );
+        }
+
+        if let Some(project_table) = table.get("project") {
+            Self::set_value(
+                &mut config.project_config.base_directory,
+                project_table.get("base_directory"),
+            );
+            Self::set_value(
+                &mut config.project_config.draft_directory,
+                project_table.get("draft_directory"),
+            );
+            Self::set_value(
+                &mut config.project_config.config_path,
+                project_table.get("config_path"),
+            );
+            Self::set_value(
+                &mut config.project_config.output_path,
+                project_table.get("output_path"),
+            );
+            Self::set_value(
+                &mut config.project_config.context_path,
+                project_table.get("context_path"),
+            );
+        }
+
+        Ok(config)
     }
 }
 

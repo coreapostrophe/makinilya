@@ -2,43 +2,25 @@
 
 use std::{fs, path::PathBuf};
 
-use makinilya_text::{MakinilyaText, Rule};
+use makinilya_text::{MakinilyaText, MakinilyaTextError, Rule};
 use pest::iterators::Pair;
 use thiserror::Error;
 
 use crate::{
     builder::{ManuscriptBuilder, ManuscriptBuilderLayout},
+    config::Config,
     context::{Context, Data},
-    files::FileHandler,
+    files::{FileHandler, FileHandlerError},
     story::Story,
 };
 
 #[derive(Error, Debug)]
 pub enum MakinilyaError {
     #[error("[FileHandler Error]: {0}")]
-    FileHandlerException(String),
+    FileHandlerError(#[from] FileHandlerError),
 
     #[error("[Parser Error]: {0}")]
-    ParserError(String),
-}
-
-#[derive(Debug)]
-pub struct Config {
-    pub base_directory: PathBuf,
-    pub draft_directory: PathBuf,
-    pub output_path: PathBuf,
-    pub context_path: PathBuf,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            base_directory: "./".into(),
-            draft_directory: "draft".into(),
-            output_path: "./out/manuscript.docx".into(),
-            context_path: "Context.toml".into(),
-        }
-    }
+    ParserError(#[from] MakinilyaTextError),
 }
 
 /// A struct for initializing the script.
@@ -49,12 +31,18 @@ impl Default for Config {
 ///
 /// # Examples
 /// ```
-/// use makinilya_core::core::{MakinilyaCore, Config};
+/// use makinilya_core::{
+///     core::MakinilyaCore, 
+///     config::{Config, ProjectConfig}
+/// };
 /// use std::path::PathBuf;
-/// 
+///
 /// let story = MakinilyaCore::init(Config {
-///    base_directory: PathBuf::from("./mock"),
-///    ..Default::default()
+///     project_config: ProjectConfig {
+///         base_directory: PathBuf::from("./mock"),
+///         ..Default::default()
+///     },
+///     ..Default::default()
 /// });
 ///
 /// assert!(story.is_ok());
@@ -68,22 +56,24 @@ pub struct MakinilyaCore {
 
 impl MakinilyaCore {
     /// Initializes the story and context of the project.
-    /// 
+    ///
     /// This function consumes the path provided by the configuration
-    /// and builds a `Story` and `Context` struct out of them. 
+    /// and builds a `Story` and `Context` struct out of them.
     pub fn init(config: Config) -> Result<Self, MakinilyaError> {
-        let mut context_path = config.base_directory.clone();
-        context_path.push(&config.context_path);
-        let mut story_directory = config.base_directory.clone();
-        story_directory.push(&config.draft_directory);
+        let project_config = &config.project_config;
+
+        let mut context_path = project_config.base_directory.clone();
+        context_path.push(&project_config.context_path);
+        let mut story_directory = project_config.base_directory.clone();
+        story_directory.push(&project_config.draft_directory);
 
         Self::handle_directory(&context_path);
         Self::handle_directory(&story_directory);
 
         let context = FileHandler::build_context(context_path)
-            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
+            .map_err(|error| MakinilyaError::FileHandlerError(error))?;
         let story = FileHandler::build_story(story_directory)
-            .map_err(|error| MakinilyaError::FileHandlerException(error.to_string()))?;
+            .map_err(|error| MakinilyaError::FileHandlerError(error))?;
 
         Ok(Self {
             story,
@@ -93,19 +83,20 @@ impl MakinilyaCore {
     }
 
     /// Interpolates the story and builds the manuscript
-    /// 
-    /// The story of the project is interpolated with the context 
+    ///
+    /// The story of the project is interpolated with the context
     /// variables to create its final draft. The core then passes the
-    /// interpolated story to the builder which then creates the 
-    /// docx file. Afterwards, the document is written to a system 
+    /// interpolated story to the builder which then creates the
+    /// docx file. Afterwards, the document is written to a system
     /// file based on the path provided from the configuration.
     pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), MakinilyaError> {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
         let builder = ManuscriptBuilder::new(builder_layout);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
+        let project_config = &self.config.project_config;
 
-        let mut output_path = self.config.base_directory.clone();
-        output_path.push(&self.config.output_path);
+        let mut output_path = project_config.base_directory.clone();
+        output_path.push(&project_config.output_path);
 
         let mut output_directory = output_path.clone();
         output_directory.pop();
@@ -130,7 +121,7 @@ impl MakinilyaCore {
 
         for content in story.mut_contents() {
             let parsed_source = MakinilyaText::parse(&content)
-                .map_err(|error| MakinilyaError::ParserError(error.to_string()))?
+                .map_err(|error| MakinilyaError::ParserError(error))?
                 .next()
                 .unwrap();
             let expressions = parsed_source.into_inner();
@@ -206,12 +197,17 @@ impl MakinilyaCore {
 
 #[cfg(test)]
 mod core_tests {
+    use crate::config::ProjectConfig;
+
     use super::*;
 
     #[test]
     fn extracts_story_and_context() {
         let result = MakinilyaCore::init(Config {
-            base_directory: PathBuf::from("./mock"),
+            project_config: ProjectConfig {
+                base_directory: PathBuf::from("./mock"),
+                ..Default::default()
+            },
             ..Default::default()
         });
 
@@ -221,7 +217,10 @@ mod core_tests {
     #[test]
     fn builds_manuscript() {
         let result = MakinilyaCore::init(Config {
-            base_directory: PathBuf::from("./mock"),
+            project_config: ProjectConfig {
+                base_directory: PathBuf::from("./mock"),
+                ..Default::default()
+            },
             ..Default::default()
         });
         assert!(result
