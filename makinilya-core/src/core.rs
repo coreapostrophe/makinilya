@@ -32,13 +32,13 @@ pub enum MakinilyaError {
 /// # Examples
 /// ```
 /// use makinilya_core::{
-///     core::MakinilyaCore, 
+///     core::MakinilyaCore,
 ///     config::{Config, ProjectConfig}
 /// };
 /// use std::path::PathBuf;
 ///
 /// let story = MakinilyaCore::init(Config {
-///     project_config: ProjectConfig {
+///     project: ProjectConfig {
 ///         base_directory: PathBuf::from("./mock"),
 ///         ..Default::default()
 ///     },
@@ -60,7 +60,7 @@ impl MakinilyaCore {
     /// This function consumes the path provided by the configuration
     /// and builds a `Story` and `Context` struct out of them.
     pub fn init(config: Config) -> Result<Self, MakinilyaError> {
-        let project_config = &config.project_config;
+        let project_config = &config.project;
 
         let mut context_path = project_config.base_directory.clone();
         context_path.push(&project_config.context_path);
@@ -93,7 +93,7 @@ impl MakinilyaCore {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
         let builder = ManuscriptBuilder::new(builder_layout);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
-        let project_config = &self.config.project_config;
+        let project_config = &self.config.project;
 
         let mut output_path = project_config.base_directory.clone();
         output_path.push(&project_config.output_path);
@@ -204,7 +204,7 @@ mod core_tests {
     #[test]
     fn extracts_story_and_context() {
         let result = MakinilyaCore::init(Config {
-            project_config: ProjectConfig {
+            project: ProjectConfig {
                 base_directory: PathBuf::from("./mock"),
                 ..Default::default()
             },
@@ -217,7 +217,7 @@ mod core_tests {
     #[test]
     fn builds_manuscript() {
         let result = MakinilyaCore::init(Config {
-            project_config: ProjectConfig {
+            project: ProjectConfig {
                 base_directory: PathBuf::from("./mock"),
                 ..Default::default()
             },

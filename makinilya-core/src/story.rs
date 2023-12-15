@@ -1,27 +1,29 @@
 //! Structs for representing the written narrative.
 
+use crate::files::{Directory, PathItem};
+
 /// Data structure that represents the story.
-/// 
+///
 /// - `Parts` are organizational sections of the story, they
-/// can also be called as Chapters, or Acts. 
-/// - `Contents` are the actual scenes within such parts, and 
-/// contains the actual narrative. 
-/// 
+/// can also be called as Chapters, or Acts.
+/// - `Contents` are the actual scenes within such parts, and
+/// contains the actual narrative.
+///
 /// The whole story, itself, is a part that we conventionally
-/// entitle "root". It comprises a combination of parts and 
+/// entitle "root". It comprises a combination of parts and
 /// contents.
-/// 
-/// 
+///
+///
 /// # Examples
 /// ```
 /// use makinilya_core::story::Story;
-/// 
+///
 /// let mut story = Story::new("root");
-/// 
+///
 /// let mut part = Story::new("Chapter 1");
 /// part.push_content("I'm the first scene.");
 /// part.push_content("I'm the second scene.");
-/// 
+///
 /// story.push_part(part);
 /// ```
 #[derive(Debug, Clone)]
@@ -66,5 +68,25 @@ impl Story {
 
     pub fn mut_contents(&mut self) -> &mut Vec<String> {
         &mut self.contents
+    }
+
+    pub fn parse(directory: &Directory) -> Self {
+        let mut story = Self::new(directory.name());
+
+        for item in directory.contents() {
+            match item {
+                PathItem::Directory(directory) => {
+                    let nested_story = Self::parse(directory);
+                    story.push_part(nested_story);
+                }
+                PathItem::File(file) => {
+                    if file.extension == "mt" {
+                        story.push_content(&file.content);
+                    }
+                }
+            }
+        }
+
+        story
     }
 }

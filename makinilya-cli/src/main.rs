@@ -50,7 +50,7 @@ fn main() {
     match args.subcommand {
         SubCommands::Build(build_args) => {
             let mut core = MakinilyaCore::init(Config {
-                project_config: ProjectConfig {
+                project: ProjectConfig {
                     base_directory: build_args.path.unwrap_or(Default::default()),
                     ..Default::default()
                 },

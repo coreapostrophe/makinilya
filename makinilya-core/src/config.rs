@@ -25,15 +25,15 @@ impl Default for ProjectConfig {
 
 #[derive(Debug)]
 pub struct Config {
-    pub project_config: ProjectConfig,
-    pub builder_layout: ManuscriptBuilderLayout,
+    pub project: ProjectConfig,
+    pub builder: ManuscriptBuilderLayout,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            project_config: Default::default(),
-            builder_layout: Default::default(),
+            project: Default::default(),
+            builder: Default::default(),
         }
     }
 }
