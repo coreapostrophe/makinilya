@@ -80,8 +80,10 @@ impl Story {
                     story.push_part(nested_story);
                 }
                 PathItem::File(file) => {
-                    if file.extension == "mt" {
-                        story.push_content(&file.content);
+                    if let Some(extension) = &file.extension {
+                        if extension == "mt" {
+                            story.push_content(&file.content);
+                        }
                     }
                 }
             }

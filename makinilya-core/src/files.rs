@@ -2,7 +2,6 @@
 
 use std::{
     collections::HashMap,
-    ffi::OsString,
     fs::{self},
     io,
     path::{PathBuf, StripPrefixError},
@@ -21,7 +20,7 @@ use crate::{
 pub struct File {
     pub name: String,
     pub content: String,
-    pub extension: String,
+    pub extension: Option<String>,
 }
 
 #[derive(Debug)]
@@ -90,7 +89,10 @@ impl Directory {
             } else {
                 let name = entry.file_name().to_string_lossy().to_string();
                 let content = fs::read_to_string(&entry_path)?;
-                let extension = entry.path().extension();
+                let extension = entry
+                    .path()
+                    .extension()
+                    .map(|os_string| os_string.to_string_lossy().to_string());
                 let nested_file = File {
                     content,
                     name,
