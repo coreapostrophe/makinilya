@@ -2,6 +2,7 @@
 
 use std::{
     collections::HashMap,
+    ffi::OsString,
     fs::{self},
     io,
     path::{PathBuf, StripPrefixError},
@@ -15,6 +16,93 @@ use crate::{
     context::{Context, Data},
     story::Story,
 };
+
+#[derive(Debug)]
+pub struct File {
+    pub name: String,
+    pub content: String,
+    pub extension: String,
+}
+
+#[derive(Debug)]
+pub enum PathItem {
+    File(File),
+    Directory(Box<Directory>),
+}
+
+impl PathItem {
+    pub fn new_file(file_content: File) -> Self {
+        Self::File(file_content)
+    }
+
+    pub fn new_directory(directory: Directory) -> Self {
+        Self::Directory(Box::new(directory))
+    }
+}
+
+#[derive(Debug)]
+pub struct Directory {
+    name: String,
+    contents: Vec<PathItem>,
+}
+
+impl Directory {
+    pub fn new(title: impl Into<String>) -> Self {
+        Self {
+            name: title.into(),
+            contents: Vec::new(),
+        }
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn contents(&self) -> &Vec<PathItem> {
+        &self.contents
+    }
+
+    pub fn push_item(&mut self, path_item: PathItem) {
+        self.contents.push(path_item);
+    }
+
+    pub fn read(path: impl Into<PathBuf>) -> Result<Self, FileHandlerError> {
+        let path: PathBuf = path.into();
+        let read_dir = fs::read_dir(&path)?;
+
+        let mut directory: Directory = {
+            let name = path
+                .file_name()
+                .ok_or(FileHandlerError::DirectoryNameException)?
+                .to_str()
+                .ok_or(FileHandlerError::StringDirectoryName)?;
+
+            Self::new(name)
+        };
+
+        for entry in read_dir {
+            let entry = entry?;
+            let entry_path = entry.path();
+
+            if entry_path.is_dir() {
+                let nested_directory = Self::read(entry_path)?;
+                directory.push_item(PathItem::Directory(Box::new(nested_directory)))
+            } else {
+                let name = entry.file_name().to_string_lossy().to_string();
+                let content = fs::read_to_string(&entry_path)?;
+                let extension = entry.path().extension();
+                let nested_file = File {
+                    content,
+                    name,
+                    extension,
+                };
+                directory.push_item(PathItem::File(nested_file));
+            }
+        }
+
+        Ok(directory)
+    }
+}
 
 #[derive(Error, Debug)]
 pub enum FileHandlerError {
@@ -190,78 +278,75 @@ impl FileHandler {
         let mut config = Config::default();
 
         if let Some(story_table) = table.get("story") {
-            Self::set_value(&mut config.builder_layout.title, story_table.get("title"));
-            Self::set_value(
-                &mut config.builder_layout.pen_name,
-                story_table.get("pen_name"),
-            );
+            Self::set_value(&mut config.builder.title, story_table.get("title"));
+            Self::set_value(&mut config.builder.pen_name, story_table.get("pen_name"));
         }
 
         if let Some(author_table) = table.get("author") {
             Self::set_value(
-                &mut config.builder_layout.contact_information.name,
+                &mut config.builder.contact_information.name,
                 author_table.get("name"),
             );
             Self::set_option_value(
-                &mut config.builder_layout.contact_information.mobile_number,
+                &mut config.builder.contact_information.mobile_number,
                 author_table.get("mobile_number"),
             );
             Self::set_value(
-                &mut config.builder_layout.contact_information.address_1,
+                &mut config.builder.contact_information.address_1,
                 author_table.get("address_1"),
             );
             Self::set_option_value(
-                &mut config.builder_layout.contact_information.address_2,
+                &mut config.builder.contact_information.address_2,
                 author_table.get("address_2"),
             );
             Self::set_value(
-                &mut config.builder_layout.contact_information.email_address,
+                &mut config.builder.contact_information.email_address,
                 author_table.get("email_address"),
             );
         }
 
         if let Some(agent_table) = table.get("agent") {
             Self::set_value(
-                &mut config.builder_layout.contact_information.name,
+                &mut config.builder.contact_information.name,
                 agent_table.get("name"),
             );
             Self::set_option_value(
-                &mut config.builder_layout.contact_information.mobile_number,
+                &mut config.builder.contact_information.mobile_number,
                 agent_table.get("mobile_number"),
             );
             Self::set_value(
-                &mut config.builder_layout.contact_information.address_1,
+                &mut config.builder.contact_information.address_1,
                 agent_table.get("address_1"),
             );
             Self::set_option_value(
-                &mut config.builder_layout.contact_information.address_2,
+                &mut config.builder.contact_information.address_2,
                 agent_table.get("address_2"),
             );
             Self::set_value(
-                &mut config.builder_layout.contact_information.email_address,
+                &mut config.builder.contact_information.email_address,
                 agent_table.get("email_address"),
             );
         }
 
         if let Some(project_table) = table.get("project") {
             Self::set_value(
-                &mut config.project_config.base_directory,
+                &mut config.project.base_directory,
                 project_table.get("base_directory"),
             );
             Self::set_value(
-                &mut config.project_config.draft_directory,
+                &mut config.project.draft_directory,
                 project_table.get("draft_directory"),
             );
             Self::set_value(
-                &mut config.project_config.config_path,
+                &mut config.project.config_path,
                 project_table.get("config_path"),
             );
             Self::set_value(
-                &mut config.project_config.output_path,
+                &mut config.project.output_path,
                 project_table.get("output_path"),
             );
             Self::set_value(
-                &mut config.project_config.context_path,
+                &mut config.project.context_path,
                 project_table.get("context_path"),
             );
         }
