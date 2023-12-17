@@ -3,7 +3,7 @@
 use std::{
     collections::HashMap,
     fs::{self},
-    io,
+    io::{self, Read},
     path::{PathBuf, StripPrefixError},
 };
 
@@ -16,11 +16,69 @@ use crate::{
     story::Story,
 };
 
+#[derive(Error, Debug)]
+pub enum FileHandlerError {
+    #[error("`{path}` is not a valid directory.")]
+    InvalidDirectory { path: String },
+
+    #[error("`{path}` cannot end in `..`")]
+    FileNameException { path: PathBuf },
+
+    #[error("Cannot parse directory as file")]
+    DirectoryToFile,
+
+    #[error("Can't parse directory name to string.")]
+    StringDirectoryName,
+
+    #[error("Context is not a valid toml file.")]
+    UnableToParseContext,
+
+    #[error("`DateTime` and `Array` are not supported context values.")]
+    UnsupportedContextValue,
+
+    #[error(transparent)]
+    IoException(#[from] io::Error),
+
+    #[error(transparent)]
+    StripPrefixException(#[from] StripPrefixError),
+}
+
 #[derive(Debug)]
 pub struct File {
     pub name: String,
-    pub content: String,
+    pub content: Vec<u8>,
     pub extension: Option<String>,
+}
+
+impl File {
+    pub fn read(path: impl Into<PathBuf>) -> Result<Self, FileHandlerError> {
+        let path: PathBuf = path.into();
+
+        if !path.is_dir() {
+            let name = path
+                .file_name()
+                .ok_or(FileHandlerError::FileNameException { path: path.clone() })?
+                .to_string_lossy()
+                .to_string();
+            let mut file = fs::File::open(&path)?;
+
+            let mut content: Vec<u8> = vec![];
+            file.read_to_end(&mut content)?;
+
+            let extension = path
+                .extension()
+                .map(|os_string| os_string.to_string_lossy().to_string());
+            let file = File {
+                content,
+                name,
+                extension,
+            };
+
+            Ok(file)
+        } else {
+            Err(FileHandlerError::DirectoryToFile)
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -72,9 +130,9 @@ impl Directory {
         let mut directory: Directory = {
             let name = path
                 .file_name()
-                .ok_or(FileHandlerError::DirectoryNameException)?
-                .to_str()
-                .ok_or(FileHandlerError::StringDirectoryName)?;
+                .ok_or(FileHandlerError::FileNameException { path: path.clone() })?
+                .to_string_lossy()
+                .to_string();
 
             Self::new(name)
         };
@@ -88,7 +146,11 @@ impl Directory {
                 directory.push_item(PathItem::Directory(Box::new(nested_directory)))
             } else {
                 let name = entry.file_name().to_string_lossy().to_string();
-                let content = fs::read_to_string(&entry_path)?;
+                let mut file = fs::File::open(&entry_path)?;
+
+                let mut content: Vec<u8> = vec![];
+                file.read_to_end(&mut content)?;
+
                 let extension = entry
                     .path()
                     .extension()
@@ -98,6 +160,7 @@ impl Directory {
                     name,
                     extension,
                 };
+
                 directory.push_item(PathItem::File(nested_file));
             }
         }
@@ -105,32 +168,6 @@ impl Directory {
         Ok(directory)
     }
 }
-
-#[derive(Error, Debug)]
-pub enum FileHandlerError {
-    #[error("`{path}` is not a valid directory.")]
-    InvalidDirectory { path: String },
-
-    #[error("Unable to obtain directory name.")]
-    DirectoryNameException,
-
-    #[error("Can't parse directory name to string.")]
-    StringDirectoryName,
-
-    #[error("Context is not a valid toml file.")]
-    UnableToParseContext,
-
-    #[error("`DateTime` and `Array` are not supported context values.")]
-    UnsupportedContextValue,
-
-    #[error(transparent)]
-    IoException(#[from] io::Error),
-
-    #[error(transparent)]
-    StripPrefixException(#[from] StripPrefixError),
-}
-
-pub const MAKINILYA_TEXT_EXTENSION: &str = "mt";
 
 /// Unit struct that holds static functions that reads file
 /// paths.
@@ -156,41 +193,8 @@ impl FileHandler {
     /// assert!(story.is_ok());
     /// ```
     pub fn build_story(path: impl Into<PathBuf>) -> Result<Story, FileHandlerError> {
-        let story = Self::build_story_from_dir(path.into())?;
-        Ok(story)
-    }
-
-    fn build_story_from_dir(path: PathBuf) -> Result<Story, FileHandlerError> {
-        if !path.exists() || !path.is_dir() {
-            let path = path.to_string_lossy().into_owned();
-            return Err(FileHandlerError::InvalidDirectory { path });
-        }
-
-        let directory_name = path
-            .file_name()
-            .ok_or(FileHandlerError::DirectoryNameException)?
-            .to_str()
-            .ok_or(FileHandlerError::StringDirectoryName)?;
-
-        let mut story = Story::new(directory_name);
-        let read_dir = fs::read_dir(&path).map_err(|error| FileHandlerError::IoException(error))?;
-
-        for entry in read_dir {
-            let entry = entry.map_err(|error| FileHandlerError::IoException(error))?;
-            let entry_path = entry.path();
-
-            if entry_path.is_dir() {
-                let nested_story = Self::build_story_from_dir(entry_path)?;
-                story.push_part(nested_story);
-            } else if let Some(extension) = entry_path.extension() {
-                if extension == MAKINILYA_TEXT_EXTENSION {
-                    let file_content_string = fs::read_to_string(&entry_path)
-                        .map_err(|error| FileHandlerError::IoException(error))?;
-                    story.push_content(file_content_string)
-                }
-            }
-        }
-
+        let directory = Directory::read(path)?;
+        let story = Story::parse(&directory);
         Ok(story)
     }
 

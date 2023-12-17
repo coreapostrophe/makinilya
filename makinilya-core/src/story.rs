@@ -2,6 +2,8 @@
 
 use crate::files::{Directory, PathItem};
 
+pub const MAKINILYA_TEXT_EXTENSION: &str = "mt";
+
 /// Data structure that represents the story.
 ///
 /// - `Parts` are organizational sections of the story, they
@@ -81,8 +83,9 @@ impl Story {
                 }
                 PathItem::File(file) => {
                     if let Some(extension) = &file.extension {
-                        if extension == "mt" {
-                            story.push_content(&file.content);
+                        if extension == MAKINILYA_TEXT_EXTENSION {
+                            let string_content = String::from_utf8_lossy(&file.content);
+                            story.push_content(string_content);
                         }
                     }
                 }
