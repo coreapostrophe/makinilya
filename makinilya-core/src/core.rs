@@ -2,7 +2,7 @@
 
 use std::{fs, path::PathBuf};
 
-use makinilya_text::{MakinilyaText, MakinilyaTextError, Rule};
+use makinilya_text::{MakinilyaText, Rule, MakinilyaTextError};
 use pest::iterators::Pair;
 use thiserror::Error;
 
@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[derive(Error, Debug)]
-pub enum MakinilyaError {
+pub enum Error {
     #[error("[FileHandler Error]: {0}")]
     FileHandlerError(#[from] FileHandlerError),
 
@@ -59,7 +59,7 @@ impl MakinilyaCore {
     ///
     /// This function consumes the path provided by the configuration
     /// and builds a `Story` and `Context` struct out of them.
-    pub fn init(config: Config) -> Result<Self, MakinilyaError> {
+    pub fn init(config: Config) -> Result<Self, Error> {
         let project_config = &config.project;
 
         let mut context_path = project_config.base_directory.clone();
@@ -71,9 +71,9 @@ impl MakinilyaCore {
         Self::handle_directory(&story_directory);
 
         let context = FileHandler::build_context(context_path)
-            .map_err(|error| MakinilyaError::FileHandlerError(error))?;
+            .map_err(|error| Error::FileHandlerError(error))?;
         let story = FileHandler::build_story(story_directory)
-            .map_err(|error| MakinilyaError::FileHandlerError(error))?;
+            .map_err(|error| Error::FileHandlerError(error))?;
 
         Ok(Self {
             story,
@@ -89,7 +89,7 @@ impl MakinilyaCore {
     /// interpolated story to the builder which then creates the
     /// docx file. Afterwards, the document is written to a system
     /// file based on the path provided from the configuration.
-    pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), MakinilyaError> {
+    pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), Error> {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
         let builder = ManuscriptBuilder::new(builder_layout);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
@@ -116,12 +116,12 @@ impl MakinilyaCore {
         }
     }
 
-    fn interpolate_story(story: &mut Story, context: &Context) -> Result<Story, MakinilyaError> {
+    fn interpolate_story(story: &mut Story, context: &Context) -> Result<Story, Error> {
         let mut interpolated_story = Story::new(story.title());
 
         for content in story.mut_contents() {
             let parsed_source = MakinilyaText::parse(&content)
-                .map_err(|error| MakinilyaError::ParserError(error))?
+                .map_err(|error| Error::ParserError(error))?
                 .next()
                 .unwrap();
             let expressions = parsed_source.into_inner();

@@ -1,40 +1,29 @@
 //! Structs that handle the project files
 
 use std::{
-    collections::HashMap,
     fs::{self},
     io::{self, Read},
     path::{PathBuf, StripPrefixError},
 };
 
 use thiserror::Error;
-use toml::{Table, Value};
 
 use crate::{
-    config::Config,
-    context::{Context, Data},
+    config::{Config, ConfigError},
+    context::{Context, ContextError},
     story::Story,
 };
 
 #[derive(Error, Debug)]
 pub enum FileHandlerError {
-    #[error("`{path}` is not a valid directory.")]
-    InvalidDirectory { path: String },
-
     #[error("`{path}` cannot end in `..`")]
     FileNameException { path: PathBuf },
 
-    #[error("Cannot parse directory as file")]
-    DirectoryToFile,
+    #[error(transparent)]
+    ConfigError(#[from] ConfigError),
 
-    #[error("Can't parse directory name to string.")]
-    StringDirectoryName,
-
-    #[error("Context is not a valid toml file.")]
-    UnableToParseContext,
-
-    #[error("`DateTime` and `Array` are not supported context values.")]
-    UnsupportedContextValue,
+    #[error(transparent)]
+    ContextError(#[from] ContextError),
 
     #[error(transparent)]
     IoException(#[from] io::Error),
@@ -48,37 +37,6 @@ pub struct File {
     pub name: String,
     pub content: Vec<u8>,
     pub extension: Option<String>,
-}
-
-impl File {
-    pub fn read(path: impl Into<PathBuf>) -> Result<Self, FileHandlerError> {
-        let path: PathBuf = path.into();
-
-        if !path.is_dir() {
-            let name = path
-                .file_name()
-                .ok_or(FileHandlerError::FileNameException { path: path.clone() })?
-                .to_string_lossy()
-                .to_string();
-            let mut file = fs::File::open(&path)?;
-
-            let mut content: Vec<u8> = vec![];
-            file.read_to_end(&mut content)?;
-
-            let extension = path
-                .extension()
-                .map(|os_string| os_string.to_string_lossy().to_string());
-            let file = File {
-                content,
-                name,
-                extension,
-            };
-
-            Ok(file)
-        } else {
-            Err(FileHandlerError::DirectoryToFile)
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -207,156 +165,30 @@ impl FileHandler {
     /// ```
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_context("./Context.toml");
+    /// let story = FileHandler::build_context("./mock/Context.toml");
     /// ```
     pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
         let file_string = fs::read_to_string(path.into().as_path())
             .map_err(|error| FileHandlerError::IoException(error))?;
-
-        let table = file_string
-            .parse::<Table>()
-            .or(Err(FileHandlerError::UnableToParseContext))?;
-
-        let variables = Self::build_context_variables(table)?;
-        let context = Context::from(variables);
-
+        let context = Context::parse(&file_string)?;
         Ok(context)
     }
 
-    fn build_context_variables(table: Table) -> Result<HashMap<String, Data>, FileHandlerError> {
-        let mut variables = HashMap::new();
-
-        for (key, value) in table.iter() {
-            match value {
-                Value::String(string_value) => {
-                    variables.insert(key.to_owned(), Data::String(string_value.to_owned()));
-                }
-                Value::Integer(integer_value) => {
-                    variables.insert(key.to_owned(), Data::Number(*integer_value as f64));
-                }
-                Value::Float(float_value) => {
-                    variables.insert(key.to_owned(), Data::Number(*float_value));
-                }
-                Value::Boolean(boolean_value) => {
-                    variables.insert(key.to_owned(), Data::Boolean(*boolean_value));
-                }
-                Value::Table(table_value) => {
-                    let object_value = Self::build_context_variables(table_value.to_owned())?;
-                    variables.insert(key.to_owned(), Data::Object(object_value));
-                }
-                _ => return Err(FileHandlerError::UnsupportedContextValue),
-            }
-        }
-
-        Ok(variables)
-    }
-
-    fn set_value<'a, T: From<&'a String>>(field: &mut T, value: Option<&'a Value>) {
-        if let Some(value) = value {
-            match value {
-                Value::String(string_value) => {
-                    *field = string_value.into();
-                }
-                _ => (),
-            }
-        }
-    }
-
-    fn set_option_value<'a, T: From<&'a String>>(field: &mut Option<T>, value: Option<&'a Value>) {
-        if let Some(value) = value {
-            match value {
-                Value::String(string_value) => {
-                    *field = Some(string_value.into());
-                }
-                _ => (),
-            }
-        }
-    }
-
+    /// Builds the story config from provided path argument.
+    ///
+    /// This static function reads the config file path and parses
+    /// all of its values into a `Config` struct.
+    ///
+    /// # Examples
+    /// ```
+    /// use makinilya_core::files::FileHandler;
+    ///
+    /// let story = FileHandler::build_config("./mock/Config.toml");
+    /// ```
     pub fn build_config(path: impl Into<PathBuf>) -> Result<Config, FileHandlerError> {
         let file_string = fs::read_to_string(path.into().as_path())
             .map_err(|error| FileHandlerError::IoException(error))?;
-
-        let table = file_string
-            .parse::<Table>()
-            .or(Err(FileHandlerError::UnableToParseContext))?;
-
-        let mut config = Config::default();
-
-        if let Some(story_table) = table.get("story") {
-            Self::set_value(&mut config.builder.title, story_table.get("title"));
-            Self::set_value(&mut config.builder.pen_name, story_table.get("pen_name"));
-        }
-
-        if let Some(author_table) = table.get("author") {
-            Self::set_value(
-                &mut config.builder.contact_information.name,
-                author_table.get("name"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.mobile_number,
-                author_table.get("mobile_number"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.address_1,
-                author_table.get("address_1"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.address_2,
-                author_table.get("address_2"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.email_address,
-                author_table.get("email_address"),
-            );
-        }
-
-        if let Some(agent_table) = table.get("agent") {
-            Self::set_value(
-                &mut config.builder.contact_information.name,
-                agent_table.get("name"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.mobile_number,
-                agent_table.get("mobile_number"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.address_1,
-                agent_table.get("address_1"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.address_2,
-                agent_table.get("address_2"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.email_address,
-                agent_table.get("email_address"),
-            );
-        }
-
-        if let Some(project_table) = table.get("project") {
-            Self::set_value(
-                &mut config.project.base_directory,
-                project_table.get("base_directory"),
-            );
-            Self::set_value(
-                &mut config.project.draft_directory,
-                project_table.get("draft_directory"),
-            );
-            Self::set_value(
-                &mut config.project.config_path,
-                project_table.get("config_path"),
-            );
-            Self::set_value(
-                &mut config.project.output_path,
-                project_table.get("output_path"),
-            );
-            Self::set_value(
-                &mut config.project.context_path,
-                project_table.get("context_path"),
-            );
-        }
-
+        let config = Config::parse(&file_string)?;
         Ok(config)
     }
 }

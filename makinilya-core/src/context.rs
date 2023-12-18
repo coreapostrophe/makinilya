@@ -2,6 +2,18 @@
 
 use std::collections::HashMap;
 
+use thiserror::Error;
+use toml::{Table, Value};
+
+#[derive(Error, Debug)]
+pub enum ContextError {
+    #[error(transparent)]
+    ParsingError(#[from] toml::de::Error),
+    
+    #[error("`DateTime` and `Array` are not supported context values.")]
+    UnsupportedValue,
+}
+
 /// Enum representation of the possible values that the `Context` could
 /// store.
 ///
@@ -43,15 +55,15 @@ impl ToString for Data {
 ///
 /// The crate will use this module to interpolate strings based on those variables for
 /// manuscript building.
-/// 
+///
 /// # Examples
 /// ```
 /// use makinilya_core::context::{Data, Context};
 /// use std::collections::HashMap;
-/// 
+///
 /// let mut variables: HashMap<String, Data> = HashMap::new();
 /// variables.insert("main_character_name".into(), Data::String("Alyssa".into()));
-/// 
+///
 /// let context = Context::from(variables);
 /// ```
 #[derive(Debug)]
@@ -68,6 +80,44 @@ impl Context {
 
     pub fn variables(&self) -> &HashMap<String, Data> {
         &self.variables
+    }
+
+    fn parse_variables(table: Table) -> Result<HashMap<String, Data>, ContextError> {
+        let mut variables = HashMap::new();
+
+        for (key, value) in table.iter() {
+            match value {
+                Value::String(string_value) => {
+                    variables.insert(key.to_owned(), Data::String(string_value.to_owned()));
+                }
+                Value::Integer(integer_value) => {
+                    variables.insert(key.to_owned(), Data::Number(*integer_value as f64));
+                }
+                Value::Float(float_value) => {
+                    variables.insert(key.to_owned(), Data::Number(*float_value));
+                }
+                Value::Boolean(boolean_value) => {
+                    variables.insert(key.to_owned(), Data::Boolean(*boolean_value));
+                }
+                Value::Table(table_value) => {
+                    let object_value = Self::parse_variables(table_value.to_owned())?;
+                    variables.insert(key.to_owned(), Data::Object(object_value));
+                }
+                _ => return Err(ContextError::UnsupportedValue),
+            }
+        }
+
+        Ok(variables)
+    }
+
+    pub fn parse(source: &str) -> Result<Self, ContextError> {
+        let table = source
+            .parse::<Table>()?;
+
+        let variables = Self::parse_variables(table)?;
+        let context = Self::from(variables);
+
+        Ok(context)
     }
 }
 
