@@ -7,35 +7,14 @@ use docx_rs::{
 use thiserror::Error;
 
 use crate::{
-    config::Config,
-    extensions::{OptionalParagraph, WithThousandsSeparator},
+    config::{Config, ContactInformation},
+    extensions::{CloneOnSome, OptionalParagraph, WithThousandsSeparator},
     story::Story,
     units::{HalfPoint, Twip},
 };
 
 #[derive(Error, Debug)]
 pub enum BuilderError {}
-
-#[derive(Debug, Clone)]
-pub struct ContactInformation {
-    pub name: Option<String>,
-    pub address_1: Option<String>,
-    pub address_2: Option<String>,
-    pub mobile_number: Option<String>,
-    pub email_address: Option<String>,
-}
-
-impl Default for ContactInformation {
-    fn default() -> Self {
-        Self {
-            name: None,
-            address_1: None,
-            address_2: None,
-            mobile_number: None,
-            email_address: None,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct ParagraphLayout {
@@ -62,18 +41,47 @@ impl Default for ParagraphLayout {
 pub struct ManuscriptBuilderLayout {
     pub title: String,
     pub pen_name: String,
-    pub contact_information: Option<ContactInformation>,
+    pub author_information: Option<ContactInformation>,
     pub agent_information: Option<ContactInformation>,
 }
 
-impl From<Config> for ManuscriptBuilderLayout {
-    fn from(value: Config) -> Self {
-        let story_config = value.story.unwrap_or_default();
+impl ManuscriptBuilderLayout {
+    pub const DEFAULT_TITLE: &str = "Untitled";
+    pub const DEFAULT_PENNAME: &str = "UNKNOWN AUTHOR";
+}
+
+impl Default for ManuscriptBuilderLayout {
+    fn default() -> Self {
         Self {
-            title: story_config.title.unwrap_or("Untitled".into()),
-            pen_name: story_config.pen_name.unwrap_or("Unknown Author".into()),
-            contact_information: Some(value.author.unwrap_or_default().into()),
-            agent_information: Some(value.agent.unwrap_or_default().into()),
+            title: "Untitled".into(),
+            pen_name: "Unknown Author".into(),
+            author_information: None,
+            agent_information: None,
+        }
+    }
+}
+
+impl From<&Config> for ManuscriptBuilderLayout {
+    fn from(value: &Config) -> Self {
+        let title = match value.story.as_ref() {
+            Some(story_config) => story_config
+                .title
+                .as_ref()
+                .clone_on_some(Self::DEFAULT_TITLE.to_string()),
+            None => Self::DEFAULT_TITLE.to_string(),
+        };
+        let pen_name = match value.story.as_ref() {
+            Some(story_config) => story_config
+                .pen_name
+                .as_ref()
+                .clone_on_some(Self::DEFAULT_TITLE.to_string()),
+            None => Self::DEFAULT_TITLE.to_string(),
+        };
+        Self {
+            title,
+            pen_name,
+            author_information: value.author.clone(),
+            agent_information: value.agent.clone(),
         }
     }
 }
@@ -86,13 +94,11 @@ impl From<Config> for ManuscriptBuilderLayout {
 /// # Example
 /// ```
 /// use makinilya_core::{
-///     builder::{ManuscriptBuilder, ManuscriptBuilderLayout}, 
-///     files::FileHandler, 
-///     config::Config
+///     builder::{ManuscriptBuilder, ManuscriptBuilderLayout},
+///     files::FileHandler,
 /// };
 ///
-/// let layout = ManuscriptBuilderLayout::from(Config::default());
-/// let builder = ManuscriptBuilder::new(layout);
+/// let builder = ManuscriptBuilder::new(Default::default());
 /// let story = FileHandler::build_story("./mock").unwrap();
 /// let result = builder.build(&story);
 ///
@@ -202,14 +208,16 @@ impl ManuscriptBuilder {
 
         let title = &self.layout.title;
         let pen_name = &self.layout.pen_name;
-        let agent_information = match &self.layout.agent_information {
-            Some(agent_information) => agent_information.clone(),
-            None => Default::default(),
-        };
-        let contact_information = match &self.layout.contact_information {
-            Some(contact_information) => contact_information.clone(),
-            None => Default::default(),
-        };
+        let agent_information = self
+            .layout
+            .agent_information
+            .as_ref()
+            .clone_on_some(Default::default());
+        let contact_information = self
+            .layout
+            .author_information
+            .as_ref()
+            .clone_on_some(Default::default());
         let word_count = format!(
             "{} words",
             word_count.to_string().with_thousands_separator()
@@ -338,12 +346,7 @@ mod builder_tests {
             story
         };
 
-        let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::from(Config {
-            agent: None,
-            author: None,
-            project: None,
-            story: None,
-        }));
+        let builder = ManuscriptBuilder::new(Default::default());
         let result = builder.build(&mock_story);
         assert!(result.is_ok());
     }

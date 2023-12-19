@@ -10,6 +10,7 @@ use crate::{
     builder::{ManuscriptBuilder, ManuscriptBuilderLayout},
     config::Config,
     context::{Context, Data},
+    extensions::CloneOnSome,
     files::{FileHandler, FileHandlerError},
     story::Story,
 };
@@ -22,12 +23,6 @@ pub enum Error {
     #[error("[Parser Error]: {0}")]
     ParserError(#[from] MakinilyaTextError),
 }
-
-pub const DEFAULT_BASE_DIRECTORY: &str = "./";
-pub const DEFAULT_DRAFT_DIRECTORY: &str = "draft";
-pub const DEFAULT_CONTEXT_PATH: &str = "Context.toml";
-pub const DEFAULT_CONFIG_PATH: &str = "Config.toml";
-pub const DEFAULT_OUTPUT_PATH: &str = "./out/manuscript.docx";
 
 /// A struct for initializing the script.
 ///
@@ -61,6 +56,12 @@ pub struct MakinilyaCore {
 }
 
 impl MakinilyaCore {
+    pub const DEFAULT_BASE_DIRECTORY: &str = "./";
+    pub const DEFAULT_DRAFT_DIRECTORY: &str = "draft";
+    pub const DEFAULT_CONTEXT_PATH: &str = "Context.toml";
+    pub const DEFAULT_CONFIG_PATH: &str = "Config.toml";
+    pub const DEFAULT_OUTPUT_PATH: &str = "./out/manuscript.docx";
+
     /// Initializes the story and context of the project.
     ///
     /// This function consumes the path provided by the configuration
@@ -69,17 +70,17 @@ impl MakinilyaCore {
         let base_directory = match &config.project {
             Some(project_config) => project_config
                 .base_directory
-                .clone()
-                .unwrap_or(DEFAULT_BASE_DIRECTORY.into()),
-            None => DEFAULT_BASE_DIRECTORY.into(),
+                .as_ref()
+                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
+            None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let context_path = {
             let context_path = match &config.project {
                 Some(project_config) => project_config
                     .context_path
-                    .clone()
-                    .unwrap_or(DEFAULT_CONTEXT_PATH.into()),
-                None => DEFAULT_CONTEXT_PATH.into(),
+                    .as_ref()
+                    .clone_on_some(Self::DEFAULT_CONTEXT_PATH.into()),
+                None => Self::DEFAULT_CONTEXT_PATH.into(),
             };
 
             let mut path = base_directory.clone();
@@ -91,9 +92,9 @@ impl MakinilyaCore {
             let draft_directory = match &config.project {
                 Some(project_config) => project_config
                     .draft_directory
-                    .clone()
-                    .unwrap_or(DEFAULT_DRAFT_DIRECTORY.into()),
-                None => DEFAULT_DRAFT_DIRECTORY.into(),
+                    .as_ref()
+                    .clone_on_some(Self::DEFAULT_DRAFT_DIRECTORY.into()),
+                None => Self::DEFAULT_DRAFT_DIRECTORY.into(),
             };
 
             let mut path = base_directory.clone();
@@ -125,25 +126,24 @@ impl MakinilyaCore {
     pub fn build(&mut self) -> Result<(), Error> {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
 
-        let config = &self.config;
-        let layout = ManuscriptBuilderLayout::from(config.clone());
+        let layout = ManuscriptBuilderLayout::from(&self.config);
         let builder = ManuscriptBuilder::new(layout);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
 
         let base_directory = match &self.config.project {
             Some(project_config) => project_config
                 .base_directory
-                .clone()
-                .unwrap_or(DEFAULT_BASE_DIRECTORY.into()),
-            None => DEFAULT_BASE_DIRECTORY.into(),
+                .as_ref()
+                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
+            None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let output_path = {
             let context_path = match &self.config.project {
                 Some(project_config) => project_config
                     .context_path
-                    .clone()
-                    .unwrap_or(DEFAULT_OUTPUT_PATH.into()),
-                None => DEFAULT_OUTPUT_PATH.into(),
+                    .as_ref()
+                    .clone_on_some(Self::DEFAULT_OUTPUT_PATH.into()),
+                None => Self::DEFAULT_OUTPUT_PATH.into(),
             };
 
             let mut path = base_directory.clone();

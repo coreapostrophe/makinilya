@@ -1,12 +1,12 @@
-//! Traits for extending implementations from external crates, making 
-//! them more attuned to the crate's use cases. 
+//! Traits for extending implementations from external crates, making
+//! them more attuned to the crate's use cases.
 
 use docx_rs::{Paragraph, TableCell};
 
 /// Optionally renders a paragraph to a document structure.
-/// 
+///
 /// Consumes an `Option<Paragraph>` argument that determines whether
-/// or not a paragraph is rendered or not. If the value is `Some`, 
+/// or not a paragraph is rendered or not. If the value is `Some`,
 /// the paragraph will be added to the structure, otherwise, the
 /// operation will be ignored.
 pub trait OptionalParagraph {
@@ -23,9 +23,9 @@ impl OptionalParagraph for TableCell {
 }
 
 /// Separarates a string with commas (,) at every 3rd character.
-/// 
+///
 /// Mainly a utility for numeric strings, this allows the separation
-/// of each digit on a relative thousand place for added readability. 
+/// of each digit on a relative thousand place for added readability.
 pub trait WithThousandsSeparator {
     fn with_thousands_separator(self) -> Self;
 }
@@ -39,5 +39,15 @@ impl WithThousandsSeparator for String {
             .collect::<Result<Vec<&str>, _>>()
             .unwrap()
             .join(",")
+    }
+}
+
+pub trait CloneOnSome<T: Clone> {
+    fn clone_on_some(&self, default: T) -> T;
+}
+
+impl<T: Clone> CloneOnSome<T> for Option<&T> {
+    fn clone_on_some(&self, default: T) -> T {
+        self.map_or(default, |some| some.clone())
     }
 }

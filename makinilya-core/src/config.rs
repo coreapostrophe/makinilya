@@ -3,8 +3,6 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::builder::ContactInformation;
-
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error(transparent)]
@@ -48,7 +46,7 @@ impl Default for ProjectConfig {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct AuthorConfig {
+pub struct ContactInformation {
     pub name: Option<String>,
     pub address_1: Option<String>,
     pub address_2: Option<String>,
@@ -56,7 +54,7 @@ pub struct AuthorConfig {
     pub email_address: Option<String>,
 }
 
-impl Default for AuthorConfig {
+impl Default for ContactInformation {
     fn default() -> Self {
         Self {
             name: None,
@@ -64,51 +62,6 @@ impl Default for AuthorConfig {
             address_2: None,
             mobile_number: None,
             email_address: None,
-        }
-    }
-}
-
-impl Into<ContactInformation> for AuthorConfig {
-    fn into(self) -> ContactInformation {
-        ContactInformation {
-            name: self.name,
-            address_1: self.address_1,
-            address_2: self.address_2,
-            mobile_number: self.mobile_number,
-            email_address: self.email_address,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct AgentConfig {
-    pub name: Option<String>,
-    pub address_1: Option<String>,
-    pub address_2: Option<String>,
-    pub mobile_number: Option<String>,
-    pub email_address: Option<String>,
-}
-
-impl Default for AgentConfig {
-    fn default() -> Self {
-        Self {
-            name: None,
-            address_1: None,
-            address_2: None,
-            mobile_number: None,
-            email_address: None,
-        }
-    }
-}
-
-impl Into<ContactInformation> for AgentConfig {
-    fn into(self) -> ContactInformation {
-        ContactInformation {
-            name: self.name,
-            address_1: self.address_1,
-            address_2: self.address_2,
-            mobile_number: self.mobile_number,
-            email_address: self.email_address,
         }
     }
 }
@@ -117,8 +70,8 @@ impl Into<ContactInformation> for AgentConfig {
 pub struct Config {
     pub story: Option<StoryConfig>,
     pub project: Option<ProjectConfig>,
-    pub author: Option<AuthorConfig>,
-    pub agent: Option<AuthorConfig>,
+    pub author: Option<ContactInformation>,
+    pub agent: Option<ContactInformation>,
 }
 
 impl Default for Config {
