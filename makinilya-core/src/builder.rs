@@ -244,7 +244,7 @@ impl ManuscriptBuilder {
             .row_height(Twip::from_inch(9.0 / 3.0).into()),
             TableRow::new(vec![TableCell::new()
                 .clear_all_border()
-                .vertical_align(VAlignType::Top)
+                .vertical_align(VAlignType::Bottom)
                 .add_opt_paragraph(bottom_paragraph(agent_information.name.as_ref()))
                 .add_opt_paragraph(bottom_paragraph(agent_information.address_1.as_ref()))
                 .add_opt_paragraph(bottom_paragraph(agent_information.address_2.as_ref()))
@@ -262,7 +262,8 @@ impl ManuscriptBuilder {
         if !story.contents().is_empty() {
             doc = doc
                 .add_paragraph(
-                    Paragraph::new().add_run(Run::new().add_break(docx_rs::BreakType::Page)),
+                    Paragraph::new()
+                        .add_run(Run::new().add_break(docx_rs::BreakType::Page))
                 )
                 .add_table(
                     Table::new(vec![TableRow::new(vec![TableCell::new()])

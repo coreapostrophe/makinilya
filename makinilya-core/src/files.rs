@@ -168,8 +168,7 @@ impl FileHandler {
     /// let story = FileHandler::build_context("./mock/Context.toml");
     /// ```
     pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
-        let file_string = fs::read_to_string(path.into().as_path())
-            .map_err(|error| FileHandlerError::IoException(error))?;
+        let file_string = fs::read_to_string(path.into().as_path())?;
         let context = Context::parse(&file_string)?;
         Ok(context)
     }
@@ -186,8 +185,7 @@ impl FileHandler {
     /// let story = FileHandler::build_config("./mock/Config.toml");
     /// ```
     pub fn build_config(path: impl Into<PathBuf>) -> Result<Config, FileHandlerError> {
-        let file_string = fs::read_to_string(path.into().as_path())
-            .map_err(|error| FileHandlerError::IoException(error))?;
+        let file_string = fs::read_to_string(path.into().as_path())?;
         let config = Config::parse(&file_string)?;
         Ok(config)
     }

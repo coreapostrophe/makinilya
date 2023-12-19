@@ -88,6 +88,20 @@ impl MakinilyaCore {
 
             path
         };
+        let config_path = {
+            let config_path = match &config.project {
+                Some(project_config) => project_config
+                    .config_path
+                    .as_ref()
+                    .clone_on_some(Self::DEFAULT_CONFIG_PATH.into()),
+                None => Self::DEFAULT_CONFIG_PATH.into(),
+            };
+
+            let mut path = base_directory.clone();
+            path.push(config_path);
+
+            path
+        };
         let draft_directory = {
             let draft_directory = match &config.project {
                 Some(project_config) => project_config
@@ -103,10 +117,10 @@ impl MakinilyaCore {
             path
         };
 
-        Self::handle_directory(&context_path);
         Self::handle_directory(&draft_directory);
 
         let context = FileHandler::build_context(context_path)?;
+        let config = FileHandler::build_config(config_path)?;
         let story = FileHandler::build_story(draft_directory)?;
 
         Ok(Self {
@@ -138,16 +152,16 @@ impl MakinilyaCore {
             None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let output_path = {
-            let context_path = match &self.config.project {
+            let output_path = match &self.config.project {
                 Some(project_config) => project_config
-                    .context_path
+                    .output_path
                     .as_ref()
                     .clone_on_some(Self::DEFAULT_OUTPUT_PATH.into()),
                 None => Self::DEFAULT_OUTPUT_PATH.into(),
             };
 
             let mut path = base_directory.clone();
-            path.push(context_path);
+            path.push(output_path);
 
             path
         };
@@ -264,7 +278,6 @@ mod core_tests {
             }),
             ..Default::default()
         });
-
         assert!(result.is_ok());
     }
 
