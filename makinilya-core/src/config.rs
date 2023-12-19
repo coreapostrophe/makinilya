@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
+use serde::Deserialize;
 use thiserror::Error;
-use toml::{Table, Value};
 
-use crate::builder::ManuscriptBuilderLayout;
+use crate::builder::ContactInformation;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
@@ -11,143 +11,129 @@ pub enum ConfigError {
     ParsingError(#[from] toml::de::Error),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct StoryConfig {
+    pub title: Option<String>,
+    pub pen_name: Option<String>,
+}
+
+impl Default for StoryConfig {
+    fn default() -> Self {
+        Self {
+            title: None,
+            pen_name: None,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct ProjectConfig {
-    pub base_directory: PathBuf,
-    pub draft_directory: PathBuf,
-    pub config_path: PathBuf,
-    pub output_path: PathBuf,
-    pub context_path: PathBuf,
+    pub base_directory: Option<PathBuf>,
+    pub draft_directory: Option<PathBuf>,
+    pub config_path: Option<PathBuf>,
+    pub output_path: Option<PathBuf>,
+    pub context_path: Option<PathBuf>,
 }
 
 impl Default for ProjectConfig {
     fn default() -> Self {
         Self {
-            base_directory: "./".into(),
-            draft_directory: "draft".into(),
-            config_path: "Config.toml".into(),
-            output_path: "./out/manuscript.docx".into(),
-            context_path: "Context.toml".into(),
+            base_directory: None,
+            draft_directory: None,
+            config_path: None,
+            output_path: None,
+            context_path: None,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct AuthorConfig {
+    pub name: Option<String>,
+    pub address_1: Option<String>,
+    pub address_2: Option<String>,
+    pub mobile_number: Option<String>,
+    pub email_address: Option<String>,
+}
+
+impl Default for AuthorConfig {
+    fn default() -> Self {
+        Self {
+            name: None,
+            address_1: None,
+            address_2: None,
+            mobile_number: None,
+            email_address: None,
+        }
+    }
+}
+
+impl Into<ContactInformation> for AuthorConfig {
+    fn into(self) -> ContactInformation {
+        ContactInformation {
+            name: self.name,
+            address_1: self.address_1,
+            address_2: self.address_2,
+            mobile_number: self.mobile_number,
+            email_address: self.email_address,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AgentConfig {
+    pub name: Option<String>,
+    pub address_1: Option<String>,
+    pub address_2: Option<String>,
+    pub mobile_number: Option<String>,
+    pub email_address: Option<String>,
+}
+
+impl Default for AgentConfig {
+    fn default() -> Self {
+        Self {
+            name: None,
+            address_1: None,
+            address_2: None,
+            mobile_number: None,
+            email_address: None,
+        }
+    }
+}
+
+impl Into<ContactInformation> for AgentConfig {
+    fn into(self) -> ContactInformation {
+        ContactInformation {
+            name: self.name,
+            address_1: self.address_1,
+            address_2: self.address_2,
+            mobile_number: self.mobile_number,
+            email_address: self.email_address,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
-    pub project: ProjectConfig,
-    pub builder: ManuscriptBuilderLayout,
-}
-
-impl Config {
-    fn set_value<'a, T: From<&'a String>>(field: &mut T, value: Option<&'a Value>) {
-        if let Some(value) = value {
-            match value {
-                Value::String(string_value) => {
-                    *field = string_value.into();
-                }
-                _ => (),
-            }
-        }
-    }
-
-    fn set_option_value<'a, T: From<&'a String>>(field: &mut Option<T>, value: Option<&'a Value>) {
-        if let Some(value) = value {
-            match value {
-                Value::String(string_value) => {
-                    *field = Some(string_value.into());
-                }
-                _ => (),
-            }
-        }
-    }
-
-    pub fn parse(source: &str) -> Result<Self, ConfigError> {
-        let table = source.parse::<Table>()?;
-        let mut config = Config::default();
-
-        if let Some(story_table) = table.get("story") {
-            Self::set_value(&mut config.builder.title, story_table.get("title"));
-            Self::set_value(&mut config.builder.pen_name, story_table.get("pen_name"));
-        }
-
-        if let Some(author_table) = table.get("author") {
-            Self::set_value(
-                &mut config.builder.contact_information.name,
-                author_table.get("name"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.mobile_number,
-                author_table.get("mobile_number"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.address_1,
-                author_table.get("address_1"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.address_2,
-                author_table.get("address_2"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.email_address,
-                author_table.get("email_address"),
-            );
-        }
-
-        if let Some(agent_table) = table.get("agent") {
-            Self::set_value(
-                &mut config.builder.contact_information.name,
-                agent_table.get("name"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.mobile_number,
-                agent_table.get("mobile_number"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.address_1,
-                agent_table.get("address_1"),
-            );
-            Self::set_option_value(
-                &mut config.builder.contact_information.address_2,
-                agent_table.get("address_2"),
-            );
-            Self::set_value(
-                &mut config.builder.contact_information.email_address,
-                agent_table.get("email_address"),
-            );
-        }
-
-        if let Some(project_table) = table.get("project") {
-            Self::set_value(
-                &mut config.project.base_directory,
-                project_table.get("base_directory"),
-            );
-            Self::set_value(
-                &mut config.project.draft_directory,
-                project_table.get("draft_directory"),
-            );
-            Self::set_value(
-                &mut config.project.config_path,
-                project_table.get("config_path"),
-            );
-            Self::set_value(
-                &mut config.project.output_path,
-                project_table.get("output_path"),
-            );
-            Self::set_value(
-                &mut config.project.context_path,
-                project_table.get("context_path"),
-            );
-        }
-
-        Ok(config)
-    }
+    pub story: Option<StoryConfig>,
+    pub project: Option<ProjectConfig>,
+    pub author: Option<AuthorConfig>,
+    pub agent: Option<AuthorConfig>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            project: Default::default(),
-            builder: Default::default(),
+            story: None,
+            project: None,
+            author: None,
+            agent: None,
         }
+    }
+}
+
+impl Config {
+    pub fn parse(source: &str) -> Result<Self, ConfigError> {
+        Ok(toml::from_str(source)?)
     }
 }

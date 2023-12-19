@@ -332,6 +332,7 @@ dependencies = [
  "docx-rs",
  "makinilya-text",
  "pest",
+ "serde",
  "thiserror",
  "toml",
 ]

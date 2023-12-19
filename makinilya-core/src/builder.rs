@@ -6,18 +6,35 @@ use docx_rs::{
 };
 use thiserror::Error;
 
-use crate::{story::Story, units::{HalfPoint, Twip}, extensions::{OptionalParagraph, WithThousandsSeparator}};
+use crate::{
+    config::Config,
+    extensions::{OptionalParagraph, WithThousandsSeparator},
+    story::Story,
+    units::{HalfPoint, Twip},
+};
 
 #[derive(Error, Debug)]
 pub enum BuilderError {}
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ContactInformation {
-    pub name: String,
-    pub address_1: String,
+    pub name: Option<String>,
+    pub address_1: Option<String>,
     pub address_2: Option<String>,
     pub mobile_number: Option<String>,
-    pub email_address: String,
+    pub email_address: Option<String>,
+}
+
+impl Default for ContactInformation {
+    fn default() -> Self {
+        Self {
+            name: None,
+            address_1: None,
+            address_2: None,
+            mobile_number: None,
+            email_address: None,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -45,40 +62,40 @@ impl Default for ParagraphLayout {
 pub struct ManuscriptBuilderLayout {
     pub title: String,
     pub pen_name: String,
-    pub contact_information: ContactInformation,
+    pub contact_information: Option<ContactInformation>,
     pub agent_information: Option<ContactInformation>,
 }
 
-impl Default for ManuscriptBuilderLayout {
-    fn default() -> Self {
+impl From<Config> for ManuscriptBuilderLayout {
+    fn from(value: Config) -> Self {
+        let story_config = value.story.unwrap_or_default();
         Self {
-            title: "Untitled".into(),
-            pen_name: "Unknown Author".into(),
-            contact_information: ContactInformation {
-                name: "Unknown Author".into(),
-                address_1: "Address 1".into(),
-                address_2: None,
-                mobile_number: None,
-                email_address: "unknown@mail.com".into(),
-            },
-            agent_information: None,
+            title: story_config.title.unwrap_or("Untitled".into()),
+            pen_name: story_config.pen_name.unwrap_or("Unknown Author".into()),
+            contact_information: Some(value.author.unwrap_or_default().into()),
+            agent_information: Some(value.agent.unwrap_or_default().into()),
         }
     }
 }
 
 /// Builds the manuscript.
-/// 
+///
 /// Stores a `layout` field that contains all of the title page information,
 /// and builds the a `manuscript.docx` file from a provided `Story` struct.
-/// 
+///
 /// # Example
 /// ```
-/// use makinilya_core::{builder::ManuscriptBuilder, files::FileHandler};
-/// 
-/// let builder = ManuscriptBuilder::new(Default::default());
+/// use makinilya_core::{
+///     builder::{ManuscriptBuilder, ManuscriptBuilderLayout}, 
+///     files::FileHandler, 
+///     config::Config
+/// };
+///
+/// let layout = ManuscriptBuilderLayout::from(Config::default());
+/// let builder = ManuscriptBuilder::new(layout);
 /// let story = FileHandler::build_story("./mock").unwrap();
 /// let result = builder.build(&story);
-/// 
+///
 /// assert!(result.is_ok());
 /// ```
 #[derive(Debug)]
@@ -184,48 +201,51 @@ impl ManuscriptBuilder {
         };
 
         let title = &self.layout.title;
-        let contact_information = &self.layout.contact_information;
+        let pen_name = &self.layout.pen_name;
+        let agent_information = match &self.layout.agent_information {
+            Some(agent_information) => agent_information.clone(),
+            None => Default::default(),
+        };
+        let contact_information = match &self.layout.contact_information {
+            Some(contact_information) => contact_information.clone(),
+            None => Default::default(),
+        };
         let word_count = format!(
             "{} words",
             word_count.to_string().with_thousands_separator()
         );
 
-        let mut table_rows = vec![
+        let table_rows = vec![
             TableRow::new(vec![TableCell::new()
                 .clear_all_border()
                 .vertical_align(VAlignType::Top)
-                .add_opt_paragraph(top_paragraph(Some(&contact_information.name)))
-                .add_opt_paragraph(top_paragraph(Some(&contact_information.address_1)))
+                .add_opt_paragraph(top_paragraph(contact_information.name.as_ref()))
+                .add_opt_paragraph(top_paragraph(contact_information.address_1.as_ref()))
                 .add_opt_paragraph(top_paragraph(contact_information.address_2.as_ref()))
                 .add_opt_paragraph(top_paragraph(contact_information.mobile_number.as_ref()))
-                .add_opt_paragraph(top_paragraph(Some(
-                    &contact_information.email_address,
-                )))])
+                .add_opt_paragraph(top_paragraph(
+                    contact_information.email_address.as_ref(),
+                ))])
             .row_height(Twip::from_inch(9.0 / 3.0).into()),
             TableRow::new(vec![TableCell::new()
                 .clear_all_border()
                 .vertical_align(VAlignType::Center)
                 .add_opt_paragraph(middle_paragraph(Some(&title)))
-                .add_opt_paragraph(middle_paragraph(Some(&contact_information.name)))
+                .add_opt_paragraph(middle_paragraph(Some(&pen_name)))
                 .add_opt_paragraph(middle_paragraph(Some(&word_count)))])
             .row_height(Twip::from_inch(9.0 / 3.0).into()),
+            TableRow::new(vec![TableCell::new()
+                .clear_all_border()
+                .vertical_align(VAlignType::Top)
+                .add_opt_paragraph(bottom_paragraph(agent_information.name.as_ref()))
+                .add_opt_paragraph(bottom_paragraph(agent_information.address_1.as_ref()))
+                .add_opt_paragraph(bottom_paragraph(agent_information.address_2.as_ref()))
+                .add_opt_paragraph(bottom_paragraph(agent_information.mobile_number.as_ref()))
+                .add_opt_paragraph(bottom_paragraph(
+                    agent_information.email_address.as_ref(),
+                ))])
+            .row_height(Twip::from_inch(9.0 / 3.0).into()),
         ];
-
-        if let Some(agent_information) = &self.layout.agent_information {
-            table_rows.push(
-                TableRow::new(vec![TableCell::new()
-                    .clear_all_border()
-                    .vertical_align(VAlignType::Bottom)
-                    .add_opt_paragraph(bottom_paragraph(Some(&agent_information.name)))
-                    .add_opt_paragraph(bottom_paragraph(Some(&agent_information.address_1)))
-                    .add_opt_paragraph(bottom_paragraph(agent_information.address_2.as_ref()))
-                    .add_opt_paragraph(bottom_paragraph(agent_information.mobile_number.as_ref()))
-                    .add_opt_paragraph(bottom_paragraph(Some(
-                        &agent_information.email_address,
-                    )))])
-                .row_height(Twip::from_inch(9.0 / 3.0).into()),
-            )
-        }
 
         doc.add_table(Table::new(table_rows).width(Twip::from_inch(6.5).into(), WidthType::Auto))
     }
@@ -287,7 +307,7 @@ impl ManuscriptBuilder {
 
     /// Builds manuscript from a `Story` struct. Returns a `Docx` struct
     /// that can be written to a file via the [`docx-rs`] library.
-    /// 
+    ///
     /// [`docx-rs`]: https://github.com/bokuweb/docx-rs
     pub fn build(&self, story: &Story) -> Result<Docx, BuilderError> {
         let word_count = Self::word_count(story);
@@ -318,7 +338,12 @@ mod builder_tests {
             story
         };
 
-        let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
+        let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::from(Config {
+            agent: None,
+            author: None,
+            project: None,
+            story: None,
+        }));
         let result = builder.build(&mock_story);
         assert!(result.is_ok());
     }

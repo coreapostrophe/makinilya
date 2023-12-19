@@ -2,7 +2,7 @@
 
 use std::{fs, path::PathBuf};
 
-use makinilya_text::{MakinilyaText, Rule, MakinilyaTextError};
+use makinilya_text::{MakinilyaText, MakinilyaTextError, Rule};
 use pest::iterators::Pair;
 use thiserror::Error;
 
@@ -23,6 +23,12 @@ pub enum Error {
     ParserError(#[from] MakinilyaTextError),
 }
 
+pub const DEFAULT_BASE_DIRECTORY: &str = "./";
+pub const DEFAULT_DRAFT_DIRECTORY: &str = "draft";
+pub const DEFAULT_CONTEXT_PATH: &str = "Context.toml";
+pub const DEFAULT_CONFIG_PATH: &str = "Config.toml";
+pub const DEFAULT_OUTPUT_PATH: &str = "./out/manuscript.docx";
+
 /// A struct for initializing the script.
 ///
 /// Consumes a configuration and contains static functions and
@@ -38,10 +44,10 @@ pub enum Error {
 /// use std::path::PathBuf;
 ///
 /// let story = MakinilyaCore::init(Config {
-///     project: ProjectConfig {
-///         base_directory: PathBuf::from("./mock"),
+///     project: Some(ProjectConfig {
+///         base_directory: Some(PathBuf::from("./mock")),
 ///         ..Default::default()
-///     },
+///     }),
 ///     ..Default::default()
 /// });
 ///
@@ -60,20 +66,47 @@ impl MakinilyaCore {
     /// This function consumes the path provided by the configuration
     /// and builds a `Story` and `Context` struct out of them.
     pub fn init(config: Config) -> Result<Self, Error> {
-        let project_config = &config.project;
+        let base_directory = match &config.project {
+            Some(project_config) => project_config
+                .base_directory
+                .clone()
+                .unwrap_or(DEFAULT_BASE_DIRECTORY.into()),
+            None => DEFAULT_BASE_DIRECTORY.into(),
+        };
+        let context_path = {
+            let context_path = match &config.project {
+                Some(project_config) => project_config
+                    .context_path
+                    .clone()
+                    .unwrap_or(DEFAULT_CONTEXT_PATH.into()),
+                None => DEFAULT_CONTEXT_PATH.into(),
+            };
 
-        let mut context_path = project_config.base_directory.clone();
-        context_path.push(&project_config.context_path);
-        let mut story_directory = project_config.base_directory.clone();
-        story_directory.push(&project_config.draft_directory);
+            let mut path = base_directory.clone();
+            path.push(context_path);
+
+            path
+        };
+        let draft_directory = {
+            let draft_directory = match &config.project {
+                Some(project_config) => project_config
+                    .draft_directory
+                    .clone()
+                    .unwrap_or(DEFAULT_DRAFT_DIRECTORY.into()),
+                None => DEFAULT_DRAFT_DIRECTORY.into(),
+            };
+
+            let mut path = base_directory.clone();
+            path.push(draft_directory);
+
+            path
+        };
 
         Self::handle_directory(&context_path);
-        Self::handle_directory(&story_directory);
+        Self::handle_directory(&draft_directory);
 
-        let context = FileHandler::build_context(context_path)
-            .map_err(|error| Error::FileHandlerError(error))?;
-        let story = FileHandler::build_story(story_directory)
-            .map_err(|error| Error::FileHandlerError(error))?;
+        let context = FileHandler::build_context(context_path)?;
+        let story = FileHandler::build_story(draft_directory)?;
 
         Ok(Self {
             story,
@@ -89,14 +122,35 @@ impl MakinilyaCore {
     /// interpolated story to the builder which then creates the
     /// docx file. Afterwards, the document is written to a system
     /// file based on the path provided from the configuration.
-    pub fn build(&mut self, builder_layout: ManuscriptBuilderLayout) -> Result<(), Error> {
+    pub fn build(&mut self) -> Result<(), Error> {
         let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
-        let builder = ManuscriptBuilder::new(builder_layout);
-        let manuscript_document = builder.build(&interpolated_story).unwrap();
-        let project_config = &self.config.project;
 
-        let mut output_path = project_config.base_directory.clone();
-        output_path.push(&project_config.output_path);
+        let config = &self.config;
+        let layout = ManuscriptBuilderLayout::from(config.clone());
+        let builder = ManuscriptBuilder::new(layout);
+        let manuscript_document = builder.build(&interpolated_story).unwrap();
+
+        let base_directory = match &self.config.project {
+            Some(project_config) => project_config
+                .base_directory
+                .clone()
+                .unwrap_or(DEFAULT_BASE_DIRECTORY.into()),
+            None => DEFAULT_BASE_DIRECTORY.into(),
+        };
+        let output_path = {
+            let context_path = match &self.config.project {
+                Some(project_config) => project_config
+                    .context_path
+                    .clone()
+                    .unwrap_or(DEFAULT_OUTPUT_PATH.into()),
+                None => DEFAULT_OUTPUT_PATH.into(),
+            };
+
+            let mut path = base_directory.clone();
+            path.push(context_path);
+
+            path
+        };
 
         let mut output_directory = output_path.clone();
         output_directory.pop();
@@ -204,10 +258,10 @@ mod core_tests {
     #[test]
     fn extracts_story_and_context() {
         let result = MakinilyaCore::init(Config {
-            project: ProjectConfig {
-                base_directory: PathBuf::from("./mock"),
+            project: Some(ProjectConfig {
+                base_directory: Some(PathBuf::from("./mock")),
                 ..Default::default()
-            },
+            }),
             ..Default::default()
         });
 
@@ -217,15 +271,12 @@ mod core_tests {
     #[test]
     fn builds_manuscript() {
         let result = MakinilyaCore::init(Config {
-            project: ProjectConfig {
-                base_directory: PathBuf::from("./mock"),
+            project: Some(ProjectConfig {
+                base_directory: Some(PathBuf::from("./mock")),
                 ..Default::default()
-            },
+            }),
             ..Default::default()
         });
-        assert!(result
-            .unwrap()
-            .build(ManuscriptBuilderLayout::default())
-            .is_ok());
+        assert!(result.unwrap().build().is_ok());
     }
 }
