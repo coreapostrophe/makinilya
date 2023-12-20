@@ -1,11 +1,11 @@
-<p style="text-align:center;">
-    <img alt="logo" src="./assets/makinilya-logo.png" style="height:200px;" />
-    <br>
-    <img alt="release badge" src="https://github.com/coreapostrophe/makinilya/actions/workflows/release.yml/badge.svg"/>
-    <img alt="build badge" src="https://github.com/coreapostrophe/makinilya/actions/workflows/build.yml/badge.svg"/>
-</p>
 
 # ✒️ Makinilya
+
+<p align="center"><img src="./assets/makinilya-logo.png" style="height:200px"/></p>
+<p align="center">
+    <img src="https://github.com/coreapostrophe/makinilya/actions/workflows/release.yml/badge.svg">
+    <img src="https://github.com/coreapostrophe/makinilya/actions/workflows/build.yml/badge.svg">
+</p>
 
 ## About
 
