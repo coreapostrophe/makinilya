@@ -66,7 +66,15 @@ impl MakinilyaCore {
     ///
     /// This function consumes the path provided by the configuration
     /// and builds a `Story` and `Context` struct out of them.
-    pub fn init(config: Config) -> Result<Self, Error> {
+    pub fn init(path: impl Into<PathBuf>) -> Result<Self, Error> {
+        let config_path = {
+            let mut path: PathBuf = path.into();
+            path.push(Self::DEFAULT_CONFIG_PATH);
+            path
+        };
+        
+        let config = FileHandler::build_config(config_path)?;
+
         let base_directory = match &config.project {
             Some(project_config) => project_config
                 .base_directory
@@ -88,20 +96,6 @@ impl MakinilyaCore {
 
             path
         };
-        let config_path = {
-            let config_path = match &config.project {
-                Some(project_config) => project_config
-                    .config_path
-                    .as_ref()
-                    .clone_on_some(Self::DEFAULT_CONFIG_PATH.into()),
-                None => Self::DEFAULT_CONFIG_PATH.into(),
-            };
-
-            let mut path = base_directory.clone();
-            path.push(config_path);
-
-            path
-        };
         let draft_directory = {
             let draft_directory = match &config.project {
                 Some(project_config) => project_config
@@ -120,7 +114,6 @@ impl MakinilyaCore {
         Self::handle_directory(&draft_directory);
 
         let context = FileHandler::build_context(context_path)?;
-        let config = FileHandler::build_config(config_path)?;
         let story = FileHandler::build_story(draft_directory)?;
 
         Ok(Self {
@@ -137,8 +130,8 @@ impl MakinilyaCore {
     /// interpolated story to the builder which then creates the
     /// docx file. Afterwards, the document is written to a system
     /// file based on the path provided from the configuration.
-    pub fn build(&mut self) -> Result<(), Error> {
-        let interpolated_story = Self::interpolate_story(&mut self.story, &self.context)?;
+    pub fn build(&self) -> Result<(), Error> {
+        let interpolated_story = Self::interpolate_story(&self.story, &self.context)?;
 
         let layout = ManuscriptBuilderLayout::from(&self.config);
         let builder = ManuscriptBuilder::new(layout);
@@ -184,10 +177,10 @@ impl MakinilyaCore {
         }
     }
 
-    fn interpolate_story(story: &mut Story, context: &Context) -> Result<Story, Error> {
+    fn interpolate_story(story: &Story, context: &Context) -> Result<Story, Error> {
         let mut interpolated_story = Story::new(story.title());
 
-        for content in story.mut_contents() {
+        for content in story.contents() {
             let parsed_source = MakinilyaText::parse(&content)
                 .map_err(|error| Error::ParserError(error))?
                 .next()
@@ -201,7 +194,7 @@ impl MakinilyaCore {
             interpolated_story.push_content(interpolated_expressions.join(""));
         }
 
-        for part in story.mut_parts() {
+        for part in story.parts() {
             let interpolated_part = Self::interpolate_story(part, context)?;
             interpolated_story.push_part(interpolated_part);
         }
@@ -265,31 +258,17 @@ impl MakinilyaCore {
 
 #[cfg(test)]
 mod core_tests {
-    use crate::config::ProjectConfig;
-
     use super::*;
 
     #[test]
     fn extracts_story_and_context() {
-        let result = MakinilyaCore::init(Config {
-            project: Some(ProjectConfig {
-                base_directory: Some(PathBuf::from("./mock")),
-                ..Default::default()
-            }),
-            ..Default::default()
-        });
+        let result = MakinilyaCore::init("./mock/Config.toml");
         assert!(result.is_ok());
     }
 
     #[test]
     fn builds_manuscript() {
-        let result = MakinilyaCore::init(Config {
-            project: Some(ProjectConfig {
-                base_directory: Some(PathBuf::from("./mock")),
-                ..Default::default()
-            }),
-            ..Default::default()
-        });
+        let result = MakinilyaCore::init("./mock/Config.toml");
         assert!(result.unwrap().build().is_ok());
     }
 }

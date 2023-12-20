@@ -1,10 +1,5 @@
-use std::path::PathBuf;
-
 use clap::{Args, Parser, Subcommand};
-use makinilya_core::{
-    config::{Config, ProjectConfig},
-    core::MakinilyaCore,
-};
+use makinilya_core::core::MakinilyaCore;
 
 /// ░█▄█░█▀█░█░█░▀█▀░█▀█░▀█▀░█░░░█░█░█▀█
 /// ░█░█░█▀█░█▀▄░░█░░█░█░░█░░█░░░░█░░█▀█
@@ -41,7 +36,8 @@ enum SubCommands {
 
 #[derive(Args, Debug)]
 struct BuildArgs {
-    path: Option<PathBuf>,
+    /// directory that contains the manifest
+    path: Option<String>,
 }
 
 fn main() {
@@ -49,16 +45,15 @@ fn main() {
 
     match args.subcommand {
         SubCommands::Build(build_args) => {
-            let mut core = MakinilyaCore::init(Config {
-                project: Some(ProjectConfig {
-                    base_directory: build_args.path,
-                    ..Default::default()
-                }),
-                ..Default::default()
-            })
-            .unwrap();
-            core.build().unwrap()
-        }
+            let path = build_args.path.unwrap_or("./Config.toml".into());
+
+            match MakinilyaCore::init(path) {
+                Ok(core) => {
+                    core.build().unwrap();
+                }
+                Err(error) => println!("{}", error),
+            }
+        },
     }
 }
 

@@ -28,7 +28,6 @@ impl Default for StoryConfig {
 pub struct ProjectConfig {
     pub base_directory: Option<PathBuf>,
     pub draft_directory: Option<PathBuf>,
-    pub config_path: Option<PathBuf>,
     pub output_path: Option<PathBuf>,
     pub context_path: Option<PathBuf>,
 }
@@ -38,7 +37,6 @@ impl Default for ProjectConfig {
         Self {
             base_directory: None,
             draft_directory: None,
-            config_path: None,
             output_path: None,
             context_path: None,
         }

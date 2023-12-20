@@ -1,7 +1,6 @@
 [project]
 base_directory = "./mock"
 draft_directory = "draft"
-config_path = "Config.toml"
 output_path = "./out/manuscript.docx"
 context_path = "Context.toml"
 
