@@ -38,13 +38,7 @@ pub enum Error {
 /// };
 /// use std::path::PathBuf;
 ///
-/// let story = MakinilyaCore::init(Config {
-///     project: Some(ProjectConfig {
-///         base_directory: Some(PathBuf::from("./mock")),
-///         ..Default::default()
-///     }),
-///     ..Default::default()
-/// });
+/// let story = MakinilyaCore::init("./mock");
 ///
 /// assert!(story.is_ok());
 /// ```
@@ -262,13 +256,13 @@ mod core_tests {
 
     #[test]
     fn extracts_story_and_context() {
-        let result = MakinilyaCore::init("./mock/Config.toml");
+        let result = MakinilyaCore::init("./mock");
         assert!(result.is_ok());
     }
 
     #[test]
     fn builds_manuscript() {
-        let result = MakinilyaCore::init("./mock/Config.toml");
+        let result = MakinilyaCore::init("./mock");
         assert!(result.unwrap().build().is_ok());
     }
 }
