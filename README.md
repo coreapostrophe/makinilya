@@ -105,6 +105,14 @@ Inside the actual scenes, we can write our actual narrative. Here, we can interp
 Hi, my name is {{ mc.name.short }}. I'm {{ mc.age }} years old.
 ```
 
+In order to build the manuscript. We have to run the build command at the root of the project tree.
+
+```bash
+makinilya build
+```
+
+This will generate a `manuscript.docx` file inside a generated `out` directory within the project.
+
 ## Documentation
 
 The in-depth documentation of Makinilya's usage is currently still a work in progress.
