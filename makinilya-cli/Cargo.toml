@@ -1,6 +1,6 @@
 [package]
 name = "makinilya"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 description = "An austere manuscript generator for writers"
 authors = ["Daveren Cordero <daverencordero@gmail.com>"]
