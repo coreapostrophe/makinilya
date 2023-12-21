@@ -38,7 +38,7 @@ For the longest time, writing fiction has been a challenge of organizing ideas. 
 
 Makinilya is a manuscript generator that parses a project tree and allows authors to have a free-flowing writing workflow through layouting features such as string-interpolation.
 
-## 🗒️ Brief Example
+## Brief Example
 
 ### Project structure
 
