@@ -1,35 +1,20 @@
 
-# ✒️ Makinilya
+# Makinilya
 
 <p align="center"><img src="./assets/makinilya-logo.png" style="height:200px"/></p>
+<p align="center">
+    A manuscript generator for ascetic writers.
+</p>
 <p align="center">
     <img src="https://github.com/coreapostrophe/makinilya/actions/workflows/release.yml/badge.svg">
     <img src="https://github.com/coreapostrophe/makinilya/actions/workflows/build.yml/badge.svg">
 </p>
 
-## About
-
-Makinilya is a simple manuscript generator for ascetic writers. It provides a simple string interpolation functionality that aids those free-flowing authors who doesn't want to worry about names or any other arbitrary information in the middle of their writing sessions.
-
-Instead of explicitly naming characters like this:
-
-```plaintext
-Hi, my name is Alyssa.
-```
-
-Makinilya allows you to store the name in a tree-structured context which can then be referenced via `{{ }}` enclosures and provided identifiers.
-
-```plaintext
-Hi, my name is {{ names.main_character }}
-```
-
-That way, you can change the name at any time.
-
 ## Crates
 
 1. [`makinilya-cli`](./makinilya-cli/) - The main crate that serves the command-line interface of the application.
 2. [`makinilya-core`](./makinilya-core/) - The core crate that contains the functionalities that reads the project, interpolates the content, and builds the manuscript.
-3. [`makinilya-text`](./makinilya-text/) - The laanguage crate that contains the implementation of the parser and its grammar rules.
+3. [`makinilya-text`](./makinilya-text/) - The language crate that contains the implementation of the parser and its grammar rules.
 
 ## Installation
 
@@ -47,11 +32,17 @@ irm https://github.com/coreapostrophe/makinilya/releases/download/v0.1.0-alpha.1
 
 - Alternatively you can download binary installers in the [releases page](https://github.com/coreapostrophe/makinilya/releases).
 
-## Tutorial
+## About
 
-The structure of your project is straightforward. The cli, upon building, will scan the whole directory tree that's inside the `draft/` folder to parse the story. The `.mt` files are where you can write your scenes; the extension is short for `Makinilya Text`. It is necessary that you place all of your final work inside that directory.
+For the longest time, writing fiction has been a challenge of organizing ideas. There are a lot of overlapping details you need to keep track of to maintain continuity, such as names of places and characters, time of events, and et cetera. Traditionally, if we want to change these information in the middle of a composition (perhaps after discovering an apt alternative), we'd have to go through all of the earlier sections and rewrite them. This has been a source of frustration for most writers, I included. Makinilya is my solution to such problem.
 
-Try to base the contents of your project from the tree below:
+Makinilya is a manuscript generator that parses a project tree and allows authors to have a free-flowing writing workflow through layouting features such as string-interpolation.
+
+## 🗒️ Brief Example
+
+### Project structure
+
+The project is simple. Makinilya parses the contents of the `draft` directory to a story. The folders are parsed as chapters, and the files with the `.mt` extension are parsed as scenes.
 
 ```plaintext
 draft/
@@ -61,41 +52,59 @@ draft/
 ├─ Chapter 2/
 │  ├─ Scene 1.mt
 │  ├─ Scene 2.mt
+Config.toml
 Context.toml
 ```
 
-The `Context.toml` file in the root of your project will contain all of the global values that you could use to interpolate in your story. It doesn't matter how you structure the values inside the file. You only need to remember how to reference them from it.
+### `Config.toml`
 
-For example, the nickname of the main character, with this context,
+This is the configuration of the manuscript. It will include all of the information that will be rendered in the title page of the document when we run the `build` command.
 
 ```toml
-[names]
-main_character = { short = "Alyssa", long = "Alyssa Grandau", nick = "Aly" }
+[story]
+title = "Untitled"
+pen_name = "Brutus Ellis"
 
+[author]
+name = "Brutus Ellis"
+address_1 = "2688 South Avenue"
+address_2 = "Barangay Olympia, Makati City"
+mobile_number = "+63 895 053 4757"
+email_address = "brutusellis@email.com"
+
+[agent]
+name = "Cymone Sabina"
+address_1 = "755 Maria Clara Street"
+address_2 = "Mandaluyong City"
+mobile_number = "+63 908 524 4125"
+email_address = "cymonesabina.@email.com"
 ```
 
-is referenced like the following:
+### `Context.toml`
+
+Instead of explicitly writing tentative information. We can store information in a tree-structured context which can later be referenced in scenes. This way, when we can change them at any time.
+
+```toml
+# This is a toml header. They are like a namespace of some sort.
+[mc]                        
+
+# This is a toml property. We can reference this property through`mc.age`
+age = 21
+
+# We can also nest objects inside properties.
+name = { short = "Core" }
+```
+
+>The possible values in the context are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects`. To learn more about toml and how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
+
+### `draft/"Chapter 1"/"Scene 1".mt`
+
+Inside the actual scenes, we can write our actual narrative. Here, we can interpolate the context information by writing their identifiers inside brace enclosures `{{ }}`.
 
 ```plaintext
-"{{ names.main_character.nick }}! I've looked everywhere for you. Where have you been?" he said.
+Hi, my name is {{ mc.name.short }}. I'm {{ mc.age }} years old.
 ```
 
->The possible values in the context are currently limited to `Strings`, `Booleans`, `Numbers`, and nested `Objects`. To learn more on how to structure them, refer to the official [toml language spec](https://toml.io/en/v1.0.0).
+## Documentation
 
-Once you're done writing your chapters. All you have to do is build the project. To do that, execute the following command on the root of your project.
-
-```bash
-makinilya build
-```
-
-Makinilya will then create a `manuscript.docx` file with all of the interpolated content. It is placed inside a generated `out/` directory.
-
-## Future Plans
-
-The application is currently in alpha and is still wildly unstable. I only created an early release so that I could use it personally on my own writing projects. It's still far from the final release (v1.0.0) as I still have a lot of things I need to check on my list. Before then, aside from additional optimizations, you can anticipate the following features:
-
-- a cli new command, possibly with the syntax of `makinilya new [PATH]`, that creates a blank project.
-- a cli generator command, possibly with the syntax of `makinilya gen [OPTIONS]`, that generates default chapters and scenes.
-- a language server extension for the text content linting and error handling. It will mainly just target issues revolving around context variable resolutions.
-
-After the final release, I also plan to create a cross-platform native text-editor application that syncs the projects across devices.
+The in-depth documentation of Makinilya's usage is currently still a work in progress.
