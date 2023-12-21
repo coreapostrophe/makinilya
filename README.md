@@ -36,7 +36,7 @@ irm https://github.com/coreapostrophe/makinilya/releases/download/v0.1.0-alpha.1
 
 For the longest time, writing fiction has been a challenge of organizing ideas. There are a lot of overlapping details you need to keep track of to maintain continuity, such as names of places and characters, time of events, and et cetera. Traditionally, if we want to change these information in the middle of a composition (perhaps after discovering an apt alternative), we'd have to go through all of the earlier sections and rewrite them. This has been a source of frustration for most writers, I included. Makinilya is my solution to such problem.
 
-Makinilya is a manuscript generator that parses a project tree and allows authors to have a free-flowing writing workflow through layouting features such as string-interpolation.
+Makinilya is a manuscript generator that parses a project tree and allows authors to have a free-flowing writing workflow through powerful layouting features such as string-interpolation.
 
 ## Brief Example
 
