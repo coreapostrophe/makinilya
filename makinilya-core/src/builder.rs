@@ -98,7 +98,7 @@ impl From<&Config> for ManuscriptBuilderLayout {
 ///     files::FileHandler,
 /// };
 ///
-/// let builder = ManuscriptBuilder::new(Default::default());
+/// let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
 /// let story = FileHandler::build_story("./mock").unwrap();
 /// let result = builder.build(&story);
 ///
@@ -110,8 +110,10 @@ pub struct ManuscriptBuilder {
 }
 
 impl ManuscriptBuilder {
-    pub fn new(layout: ManuscriptBuilderLayout) -> Self {
-        Self { layout }
+    pub fn new(layout: impl Into<ManuscriptBuilderLayout>) -> Self {
+        Self {
+            layout: layout.into(),
+        }
     }
 
     fn paragraph(text: &str, layout: ParagraphLayout) -> Paragraph {
@@ -262,8 +264,7 @@ impl ManuscriptBuilder {
         if !story.contents().is_empty() {
             doc = doc
                 .add_paragraph(
-                    Paragraph::new()
-                        .add_run(Run::new().add_break(docx_rs::BreakType::Page))
+                    Paragraph::new().add_run(Run::new().add_break(docx_rs::BreakType::Page)),
                 )
                 .add_table(
                     Table::new(vec![TableRow::new(vec![TableCell::new()])
@@ -347,7 +348,7 @@ mod builder_tests {
             story
         };
 
-        let builder = ManuscriptBuilder::new(Default::default());
+        let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
         let result = builder.build(&mock_story);
         assert!(result.is_ok());
     }
