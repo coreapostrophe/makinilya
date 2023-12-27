@@ -23,11 +23,7 @@ pub enum Error {
     ParserError(#[from] makinilya_text::Error),
 }
 
-/// A struct for initializing the script.
-///
-/// Consumes a configuration and contains static functions and
-/// methods that not only builds the `Story` and `Context` from
-/// provided paths, but also the docx manuscript.
+/// A struct that contains all static functionality for the crate
 ///
 /// # Examples
 /// ```
@@ -37,16 +33,12 @@ pub enum Error {
 /// };
 /// use std::path::PathBuf;
 ///
-/// let story = MakinilyaCore::init("./mock");
+/// let story = MakinilyaCore::build("./mock");
 ///
 /// assert!(story.is_ok());
 /// ```
 #[derive(Debug)]
-pub struct MakinilyaCore {
-    story: Story,
-    context: Context,
-    config: Config,
-}
+pub struct MakinilyaCore;
 
 impl MakinilyaCore {
     pub const DEFAULT_BASE_DIRECTORY: &str = "./";
@@ -55,19 +47,23 @@ impl MakinilyaCore {
     pub const DEFAULT_CONFIG_PATH: &str = "Config.toml";
     pub const DEFAULT_OUTPUT_PATH: &str = "./out/manuscript.docx";
 
-    /// Initializes the story and context of the project.
-    ///
-    /// This function consumes the path provided by the configuration
-    /// and builds a `Story` and `Context` struct out of them.
-    pub fn init(path: impl Into<PathBuf>) -> Result<Self, Error> {
+    fn handle_directory(directory: impl Into<PathBuf>) {
+        let directory: PathBuf = directory.into();
+        if !directory.exists() {
+            fs::create_dir_all(&directory).unwrap();
+        }
+    }
+
+    fn init_config(path: impl Into<PathBuf>) -> Result<Config, Error> {
         let config_path = {
             let mut path: PathBuf = path.into();
             path.push(Self::DEFAULT_CONFIG_PATH);
             path
         };
+        Ok(FileHandler::build_config(config_path)?)
+    }
 
-        let config = FileHandler::build_config(config_path)?;
-
+    fn init_context(config: &Config) -> Result<Context, Error> {
         let base_directory = match &config.project {
             Some(project_config) => project_config
                 .base_directory
@@ -89,6 +85,18 @@ impl MakinilyaCore {
 
             path
         };
+
+        Ok(FileHandler::build_context(context_path)?)
+    }
+
+    fn init_story(config: &Config) -> Result<Story, Error> {
+        let base_directory = match &config.project {
+            Some(project_config) => project_config
+                .base_directory
+                .as_ref()
+                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
+            None => Self::DEFAULT_BASE_DIRECTORY.into(),
+        };
         let draft_directory = {
             let draft_directory = match &config.project {
                 Some(project_config) => project_config
@@ -105,15 +113,7 @@ impl MakinilyaCore {
         };
 
         Self::handle_directory(&draft_directory);
-
-        let context = FileHandler::build_context(context_path)?;
-        let story = FileHandler::build_story(draft_directory)?;
-
-        Ok(Self {
-            story,
-            context,
-            config,
-        })
+        Ok(FileHandler::build_story(draft_directory)?)
     }
 
     /// Interpolates the story and builds the manuscript
@@ -123,13 +123,17 @@ impl MakinilyaCore {
     /// interpolated story to the builder which then creates the
     /// docx file. Afterwards, the document is written to a system
     /// file based on the path provided from the configuration.
-    pub fn build(&self) -> Result<(), Error> {
-        let interpolated_story = StoryInterpolator::interpolate(&self.story, &self.context)?;
+    pub fn build(path: impl Into<PathBuf>) -> Result<(), Error> {
+        let config = Self::init_config(path)?;
+        let story = Self::init_story(&config)?;
+        let context = Self::init_context(&config)?;
 
-        let builder = ManuscriptBuilder::new(&self.config);
+        let interpolated_story = StoryInterpolator::interpolate(&story, &context)?;
+
+        let builder = ManuscriptBuilder::new(&config);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
 
-        let base_directory = match &self.config.project {
+        let base_directory = match &config.project {
             Some(project_config) => project_config
                 .base_directory
                 .as_ref()
@@ -137,7 +141,7 @@ impl MakinilyaCore {
             None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let output_path = {
-            let output_path = match &self.config.project {
+            let output_path = match &config.project {
                 Some(project_config) => project_config
                     .output_path
                     .as_ref()
@@ -161,25 +165,6 @@ impl MakinilyaCore {
 
         Ok(())
     }
-
-    fn handle_directory(path: impl Into<PathBuf>) {
-        let path: PathBuf = path.into();
-        if !path.exists() {
-            fs::create_dir_all(&path).unwrap();
-        }
-    }
-
-    pub fn story(&self) -> &Story {
-        &self.story
-    }
-
-    pub fn config(&self) -> &Config {
-        &self.config
-    }
-
-    pub fn context(&self) -> &Context {
-        &self.context
-    }
 }
 
 #[cfg(test)]
@@ -187,14 +172,8 @@ mod core_tests {
     use super::*;
 
     #[test]
-    fn extracts_story_and_context() {
-        let result = MakinilyaCore::init("./mock");
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn builds_manuscript() {
-        let result = MakinilyaCore::init("./mock");
-        assert!(result.unwrap().build().is_ok());
+        let result = MakinilyaCore::build("./mock");
+        assert!(result.is_ok());
     }
 }

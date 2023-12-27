@@ -47,13 +47,11 @@ fn main() {
         SubCommands::Build(build_args) => {
             let path = build_args.path.unwrap_or("./Config.toml".into());
 
-            match MakinilyaCore::init(path) {
-                Ok(core) => {
-                    core.build().unwrap();
-                }
+            match MakinilyaCore::build(path) {
                 Err(error) => println!("{}", error),
+                _ => (),
             }
-        },
+        }
     }
 }
 
