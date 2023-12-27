@@ -1,3 +1,22 @@
+//! Contains modules that parses the language used for makinilya's story scenes.
+//!
+//! This crate aims to separate the grammar and parsing of makinilya's language
+//! from the software's core functionalities for ease of development, modularization,
+//! and better open-source consumption. The parser is dependent on the [`pest`]
+//! parser generator crate.
+//!
+//! # Examples
+//! ```
+//! use makinilya_text::MakinilyaText;
+//!
+//! let source_string = r#"Hi, my name is {{ names.mc}}."#;
+//!
+//! let result = MakinilyaText::parse(source_string);
+//! assert!(result.is_ok());
+//! ```
+//!
+//! [`pest`]: https://pest.rs/
+
 use pest::{error::LineColLocation, iterators::Pairs, Parser, RuleType};
 use thiserror::Error;
 
@@ -14,6 +33,7 @@ pub enum Error {
 pub struct MakinilyaText;
 
 impl MakinilyaText {
+    /// parses source string into pest's token pairs.
     pub fn parse(source: &str) -> Result<Pairs<'_, Rule>, Error> {
         GrammarParser::parse(Rule::makinilya, source).map_err(|error| Self::map_parser_error(error))
     }

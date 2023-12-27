@@ -1,4 +1,3 @@
-
 [project]
 base_directory = "./mock"
 draft_directory = "draft"
