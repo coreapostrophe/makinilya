@@ -1,6 +1,6 @@
 //! Contains modules that parses the language used for makinilya's story scenes.
 //!
-//! This crate aims to separate the grammar and parsing of makinilya's language
+//! This crate separates the grammar and parsing of makinilya's language
 //! from the software's core functionalities for ease of development, modularization,
 //! and better open-source consumption. The parser is dependent on the [`pest`]
 //! parser generator crate.
