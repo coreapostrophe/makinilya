@@ -2,4 +2,5 @@
 
 [Introduction](./introduction.md)
 
-- [Chapter 1](./chapter_1.md)
+- [Getting Started](./01_getting-started.md)
+- [Config Manifest](./02_config-manifest.md)
