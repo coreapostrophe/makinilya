@@ -37,7 +37,7 @@ pub enum Error {
 /// };
 /// use std::path::PathBuf;
 ///
-/// let story = MakinilyaCore::build("./mock");
+/// let story = MakinilyaCore::build("./mock/01-standard-project");
 ///
 /// assert!(story.is_ok());
 /// ```
@@ -202,6 +202,18 @@ impl MakinilyaCore {
 
         Ok(())
     }
+
+    pub fn check(path: impl Into<PathBuf>) -> Result<(), Error> {
+        let config = Self::init_config(path)?;
+        let story = Self::init_story(&config)?;
+
+        let checked_story = StoryInterpolator::check(&story)?;
+        for identifier in checked_story {
+            println!("{}", identifier);
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -210,13 +222,19 @@ mod core_tests {
 
     #[test]
     fn builds_manuscript() {
-        let result = MakinilyaCore::build("./mock");
+        let result = MakinilyaCore::build("./mock/01-standard-project");
         assert!(result.is_ok());
     }
 
     #[test]
     fn new_manuscript() {
-        let result = MakinilyaCore::new("./sample");
+        let result = MakinilyaCore::new("./mock/02-new-project");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn check_project() {
+        let result = MakinilyaCore::check("./mock/01-standard-project");
         assert!(result.is_ok());
     }
 }

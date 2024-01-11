@@ -12,7 +12,7 @@ mc = "Core"
 "#;
 
 pub const EXAMPLE_CONFIG: &str = r#"[project]
-base_directory = "./mock"
+base_directory = "./"
 draft_directory = "draft"
 output_path = "./out/manuscript.docx"
 context_path = "Context.toml"

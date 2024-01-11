@@ -9,6 +9,34 @@ use crate::{
 pub struct StoryInterpolator;
 
 impl StoryInterpolator {
+    pub fn check(story: &Story) -> Result<Vec<String>, Error> {
+        let mut checked_story: Vec<String> = Vec::new();
+
+        for content in story.contents() {
+            let parsed_source = MakinilyaText::parse(&content)?.next().unwrap();
+            let expressions = parsed_source.into_inner();
+
+            for expression in expressions {
+                if let Some(expression_value) = expression.into_inner().next() {
+                    match expression_value.as_rule() {
+                        Rule::string_interpolation => {
+                            let identifier = expression_value.into_inner().next().unwrap().as_str();
+                            checked_story.push(identifier.to_string());
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        for part in story.parts() {
+            let mut checked_part = Self::check(part)?;
+            checked_story.append(&mut checked_part);
+        }
+
+        Ok(checked_story)
+    }
+
     pub fn interpolate(story: &Story, context: &Context) -> Result<Story, Error> {
         let mut interpolated_story = Story::new(story.title());
 
@@ -70,5 +98,21 @@ impl StoryInterpolator {
         }
 
         result
+    }
+}
+
+#[cfg(test)]
+mod interpolator_tests {
+    use super::*;
+
+    #[test]
+    fn check_works() {
+        let mut story = Story::new("root");
+        story.push_content("{{ variable1 }} separator {{ variable2 }}");
+
+        let result = StoryInterpolator::check(&story);
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), vec!["variable1", "variable2"]);
     }
 }

@@ -198,14 +198,15 @@ mod file_tests {
 
     #[test]
     fn builds_story_model() {
-        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "/mock/draft";
+        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "/mock/01-standard-project/draft";
         let result = FileHandler::build_story(mock_path);
         assert!(result.is_ok());
     }
 
     #[test]
     fn fetches_context() {
-        let mock_path = env::var("CARGO_MANIFEST_DIR").unwrap() + "/mock/Context.toml";
+        let mock_path =
+            env::var("CARGO_MANIFEST_DIR").unwrap() + "/mock/01-standard-project/Context.toml";
         let result = FileHandler::build_context(mock_path);
         assert!(result.is_ok());
     }

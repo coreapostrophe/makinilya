@@ -38,6 +38,16 @@ enum SubCommands {
     /// Generates a new project
     #[command(verbatim_doc_comment, long_about = None)]
     New(NewArgs),
+
+    /// Lists all identifiers in project
+    #[command(verbatim_doc_comment, long_about = None)]
+    Check(CheckArgs),
+}
+
+#[derive(Args, Debug)]
+struct CheckArgs {
+    /// directory where project will be generated
+    path: Option<PathBuf>,
 }
 
 #[derive(Args, Debug)]
@@ -57,7 +67,7 @@ fn main() {
 
     match args.subcommand {
         SubCommands::Build(build_args) => {
-            let path = build_args.path.unwrap_or("./Config.toml".into());
+            let path = build_args.path.unwrap_or("./".into());
 
             match MakinilyaCore::build(path) {
                 Err(error) => println!("{}", error),
@@ -68,6 +78,14 @@ fn main() {
             let path = new_args.path.unwrap_or("./".into());
 
             match MakinilyaCore::new(path) {
+                Err(error) => println!("{}", error),
+                _ => (),
+            }
+        }
+        SubCommands::Check(new_args) => {
+            let path = new_args.path.unwrap_or("./".into());
+
+            match MakinilyaCore::check(path) {
                 Err(error) => println!("{}", error),
                 _ => (),
             }
