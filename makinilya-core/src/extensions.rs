@@ -42,6 +42,8 @@ impl WithThousandsSeparator for String {
     }
 }
 
+/// Clones content of `Option` if it exists, otherwise it returns
+/// a default value.
 pub trait CloneOnSome<T: Clone> {
     fn clone_on_some(&self, default: T) -> T;
 }

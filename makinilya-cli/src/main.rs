@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 use makinilya_core::core::MakinilyaCore;
 
+mod style;
+
 /// ░█▄█░█▀█░█░█░▀█▀░█▀█░▀█▀░█░░░█░█░█▀█
 /// ░█░█░█▀█░█▀▄░░█░░█░█░░█░░█░░░░█░░█▀█
 /// ░▀░▀░▀░▀░▀░▀░▀▀▀░▀░▀░▀▀▀░▀▀▀░░▀░░▀░▀
@@ -18,7 +20,8 @@ use makinilya_core::core::MakinilyaCore;
     version = "0.1.0",
     author = "coreapostrophe",
     verbatim_doc_comment,
-    propagate_version = true
+    propagate_version = true,
+    styles = style::get_styles()
 )]
 struct Cli {
     /// Provides a path to the configuration.

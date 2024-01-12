@@ -146,7 +146,7 @@ impl FileHandler {
     /// ```
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_story("./mock");
+    /// let story = FileHandler::build_story("./mock/01-standard-project");
     ///
     /// assert!(story.is_ok());
     /// ```
@@ -165,7 +165,7 @@ impl FileHandler {
     /// ```
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_context("./mock/Context.toml");
+    /// let story = FileHandler::build_context("./mock/01-standard-project/Context.toml");
     /// ```
     pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
         let file_string = fs::read_to_string(path.into().as_path())?;
@@ -182,7 +182,7 @@ impl FileHandler {
     /// ```
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_config("./mock/Config.toml");
+    /// let story = FileHandler::build_config("./mock/01-standard-project/Config.toml");
     /// ```
     pub fn build_config(path: impl Into<PathBuf>) -> Result<Config, FileHandlerError> {
         let file_string = fs::read_to_string(path.into().as_path())?;
@@ -208,6 +208,14 @@ mod file_tests {
         let mock_path =
             env::var("CARGO_MANIFEST_DIR").unwrap() + "/mock/01-standard-project/Context.toml";
         let result = FileHandler::build_context(mock_path);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn builds_config() {
+        let mock_path =
+            env::var("CARGO_MANIFEST_DIR").unwrap() + "/mock/01-standard-project/Config.toml";
+        let result = FileHandler::build_config(mock_path);
         assert!(result.is_ok());
     }
 }

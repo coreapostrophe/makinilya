@@ -115,12 +115,6 @@ impl MakinilyaCore {
     }
 
     /// Interpolates the story and builds the manuscript
-    ///
-    /// The story of the project is interpolated with the context
-    /// variables to create its final draft. The core then passes the
-    /// interpolated story to the builder which then creates the
-    /// docx file. Afterwards, the document is written to a system
-    /// file based on the path provided from the configuration.
     pub fn build(path: impl Into<PathBuf>) -> Result<(), Error> {
         let config = Self::init_config(path)?;
         let story = Self::init_story(&config)?;
@@ -164,6 +158,7 @@ impl MakinilyaCore {
         Ok(())
     }
 
+    /// Creates a new project
     pub fn new(path: impl Into<PathBuf>) -> Result<(), Error> {
         let base_directory: PathBuf = path.into();
 
@@ -203,6 +198,7 @@ impl MakinilyaCore {
         Ok(())
     }
 
+    /// Lists all existing identifiers in project
     pub fn check(path: impl Into<PathBuf>) -> Result<(), Error> {
         let config = Self::init_config(path)?;
         let story = Self::init_story(&config)?;
