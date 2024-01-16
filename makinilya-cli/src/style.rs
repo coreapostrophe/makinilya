@@ -1,18 +1,16 @@
 pub fn get_styles() -> clap::builder::Styles {
     clap::builder::Styles::styled()
         .placeholder(
-            anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Blue))),
-        )
-        .usage(
             anstyle::Style::new()
-                .underline()
-                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
+                .bold()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Cyan))),
         )
-        .header(
-            anstyle::Style::new()
-                .underline()
-                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Yellow))),
-        )
+        .usage(anstyle::Style::new().underline())
+        .header(anstyle::Style::new().underline())
         .error(anstyle::Style::new().fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Red))))
-        .literal(anstyle::Style::new().bold())
+        .literal(
+            anstyle::Style::new()
+                .bold()
+                .fg_color(Some(anstyle::Color::Ansi(anstyle::AnsiColor::Green))),
+        )
 }

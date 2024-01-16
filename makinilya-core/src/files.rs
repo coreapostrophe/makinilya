@@ -143,10 +143,10 @@ impl FileHandler {
     /// stores them inside a `Story` struct.
     ///
     /// # Examples
-    /// ```
+    /// ```no_run
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_story("./mock/01-standard-project");
+    /// let story = FileHandler::build_story("./draft");
     ///
     /// assert!(story.is_ok());
     /// ```
@@ -162,10 +162,10 @@ impl FileHandler {
     /// all of its values into a `Context` struct.
     ///
     /// # Examples
-    /// ```
+    /// ```no_run
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_context("./mock/01-standard-project/Context.toml");
+    /// let story = FileHandler::build_context("./Context.toml");
     /// ```
     pub fn build_context(path: impl Into<PathBuf>) -> Result<Context, FileHandlerError> {
         let file_string = fs::read_to_string(path.into().as_path())?;
@@ -179,10 +179,10 @@ impl FileHandler {
     /// all of its values into a `Config` struct.
     ///
     /// # Examples
-    /// ```
+    /// ```no_run
     /// use makinilya_core::files::FileHandler;
     ///
-    /// let story = FileHandler::build_config("./mock/01-standard-project/Config.toml");
+    /// let story = FileHandler::build_config("./Config.toml");
     /// ```
     pub fn build_config(path: impl Into<PathBuf>) -> Result<Config, FileHandlerError> {
         let file_string = fs::read_to_string(path.into().as_path())?;

@@ -11,5 +11,6 @@ pest = "2.7.5"
 serde = "1.0.193"
 docx-rs = "0.4.7"
 thiserror = "1.0.50"
+colored = "2.1.0"
 
 makinilya-text = { path = "../makinilya-text" }

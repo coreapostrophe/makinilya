@@ -2,6 +2,7 @@
 
 use std::{fs, io::Write, path::PathBuf};
 
+use colored::Colorize;
 use thiserror::Error;
 
 use crate::{
@@ -29,14 +30,14 @@ pub enum Error {
 /// A struct that contains all static functions for the core commands of the crate.
 ///
 /// # Examples
-/// ```
+/// ```no_run
 /// use makinilya_core::{
 ///     core::MakinilyaCore,
 ///     config::{Config, ProjectConfig}
 /// };
 /// use std::path::PathBuf;
 ///
-/// let story = MakinilyaCore::build("./mock/01-standard-project");
+/// let story = MakinilyaCore::build("./sample-project");
 ///
 /// assert!(story.is_ok());
 /// ```
@@ -189,6 +190,13 @@ email_address = "cymonesabina.@email.com"
         let file = fs::File::create(&output_path).unwrap();
         manuscript_document.build().pack(file).unwrap();
 
+        println!(
+            "{}{} final manuscript ({})\n",
+            " ".repeat(3),
+            "Built".green().bold(),
+            output_path.canonicalize()?.to_string_lossy()
+        );
+
         Ok(())
     }
 
@@ -213,7 +221,7 @@ email_address = "cymonesabina.@email.com"
             path
         };
         let config_path = {
-            let mut path = base_directory;
+            let mut path = base_directory.clone();
             path.push("Config.toml");
             path
         };
@@ -229,6 +237,13 @@ email_address = "cymonesabina.@email.com"
         let mut config_file = fs::File::create(config_path)?;
         config_file.write_all(Self::DEFAULT_CONFIG.as_bytes())?;
 
+        println!(
+            "{}{} makinilya project ({})\n",
+            " ".repeat(3),
+            "Created".green().bold(),
+            base_directory.canonicalize()?.to_string_lossy()
+        );
+
         Ok(())
     }
 
@@ -238,9 +253,14 @@ email_address = "cymonesabina.@email.com"
         let story = Self::init_story(&config)?;
 
         let checked_story = StoryInterpolator::check(&story)?;
+
+        println!("{}{}", " ".repeat(3), "Identifiers".green().bold());
+
         for identifier in checked_story {
-            println!("{}", identifier);
+            println!("{}{}", " ".repeat(6), identifier);
         }
+
+        println!("");
 
         Ok(())
     }
@@ -257,7 +277,7 @@ mod core_tests {
     }
 
     #[test]
-    fn new_manuscript() {
+    fn new_project() {
         let result = MakinilyaCore::new("./mock/02-new-project");
         assert!(result.is_ok());
     }
