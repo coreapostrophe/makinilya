@@ -27,7 +27,7 @@ pub enum Error {
     ParserError(#[from] makinilya_text::Error),
 }
 
-/// A struct that contains all static functionality for the crate
+/// A struct that contains all static functions for the core commands of the crate.
 ///
 /// # Examples
 /// ```

@@ -1,3 +1,5 @@
+//! Structs for creating the config of the executable.
+
 use std::path::PathBuf;
 
 use serde::Deserialize;
@@ -9,6 +11,20 @@ pub enum ConfigError {
     ParsingError(#[from] toml::de::Error),
 }
 
+/// General detail configurations of the manuscript.
+///
+/// - `title` - The title of the manuscript
+/// - `pen_name` - The pseudonym of the author that's presented on the cover.
+///
+/// # Examples
+/// ```
+/// use makinilya_core::config::StoryConfig;
+///
+/// let story_config = StoryConfig {
+///     title: Some("Untitled".into()),
+///     pen_name: Some("Brutus Ellis".into())
+/// };
+/// ```
 #[derive(Debug, Deserialize, Clone)]
 pub struct StoryConfig {
     pub title: Option<String>,
@@ -24,6 +40,24 @@ impl Default for StoryConfig {
     }
 }
 
+/// Project structure configurations of the manuscript
+///
+/// - `base_directory` - The directory that's prefixed to all other project structure paths.
+/// - `draft_directory` - The directory where the narrative scenes and chapters are contained.
+/// - `output_path` - The path of the file where the final manuscript is built.
+/// - `context_path` - The path to the file where context of the narrative is stored.
+///
+/// # Examples
+/// ```
+/// use makinilya_core::config::ProjectConfig;
+///
+/// let project_config = ProjectConfig {
+///     base_directory: Some("./".into()),
+///     draft_directory: Some("draft".into()),
+///     output_path: Some("./out/manuscript.docx".into()),
+///     context_path: Some("./Context.toml".into()),
+/// };
+/// ```
 #[derive(Debug, Deserialize, Clone)]
 pub struct ProjectConfig {
     pub base_directory: Option<PathBuf>,
@@ -43,6 +77,20 @@ impl Default for ProjectConfig {
     }
 }
 
+/// Contact information struct.
+///
+/// # Examples
+/// ```
+/// use makinilya_core::config::ContactInformation;
+///
+/// let contact_information = ContactInformation {
+///     name: Some("Brutus Ellis".into()),
+///     address_1: Some("2688 South Avenue".into()),
+///     address_2: Some("Barangay Olympia, Makati City".into()),
+///     mobile_number: Some("+63 895 053 4757".into()),
+///     email_address: Some("brutusellis@email.com".into()),
+/// };
+/// ```
 #[derive(Debug, Deserialize, Clone)]
 pub struct ContactInformation {
     pub name: Option<String>,
@@ -64,6 +112,47 @@ impl Default for ContactInformation {
     }
 }
 
+/// Collective configuration of the executable
+///
+/// # Examples
+/// ```
+/// use makinilya_core::config::{StoryConfig, ProjectConfig, ContactInformation, Config};
+///
+/// let story = StoryConfig {
+///     title: Some("Untitled".into()),
+///     pen_name: Some("Brutus Ellis".into())
+/// };
+///
+/// let project = ProjectConfig {
+///     base_directory: Some("./".into()),
+///     draft_directory: Some("draft".into()),
+///     output_path: Some("./out/manuscript.docx".into()),
+///     context_path: Some("./Context.toml".into()),
+/// };
+///
+/// let author = ContactInformation {
+///     name: Some("Brutus Ellis".into()),
+///     address_1: Some("2688 South Avenue".into()),
+///     address_2: Some("Barangay Olympia, Makati City".into()),
+///     mobile_number: Some("+63 895 053 4757".into()),
+///     email_address: Some("brutusellis@email.com".into()),
+/// };
+///
+/// let agent = ContactInformation {
+///     name: Some("Cymone Sabina".into()),
+///     address_1: Some("755 Maria Clara Street".into()),
+///     address_2: Some("Mandaluyong City".into()),
+///     mobile_number: Some("+63 908 524 4125".into()),
+///     email_address: Some("cymonesabina.@email.com".into()),
+/// };
+///
+/// let config = Config {
+///     story: Some(story),
+///     project: Some(project),
+///     author: Some(author),
+///     agent: Some(agent),
+/// };
+/// ```
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub story: Option<StoryConfig>,

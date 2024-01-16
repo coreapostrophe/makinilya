@@ -9,18 +9,16 @@ use toml::{Table, Value};
 pub enum ContextError {
     #[error(transparent)]
     ParsingError(#[from] toml::de::Error),
-    
+
     #[error("`DateTime` and `Array` are not supported context values.")]
     UnsupportedValue,
 }
 
-/// Enum representation of the possible values that the `Context` could
-/// store.
+/// Enum representation of all valid values that the `Context` could store.
 ///
-/// They are a subset of the native types supported in the [`TOML`](https://toml.io/en/v1.0.0)
-/// language spec. More complex types such as `Arrays` and `DateTimes` are not included as there's
-/// currently not an apparent use case for them. Though, it's possible that they'll be included
-/// in the future.
+/// They are a subset of the native types supported in the [`TOML`] language spec. More complex
+/// types such as `Arrays` and `DateTimes` are not included as there's currently no apparent
+/// use-case for them. Though, it's possible that they'll be included in the future.
 ///
 /// # Examples
 /// ```
@@ -32,6 +30,8 @@ pub enum ContextError {
 /// let boolean_data = Data::Boolean(false);
 /// let object_data = Data::Object(HashMap::new());
 /// ```
+///
+/// [`TOML`]: https://toml.io/en/v1.0.0
 #[derive(Debug)]
 pub enum Data {
     String(String),
@@ -53,8 +53,7 @@ impl ToString for Data {
 
 /// Struct abstraction of the narrative context.
 ///
-/// The crate will use this module to interpolate strings based on those variables for
-/// manuscript building.
+/// This struct stores indexable values that is used for interpolation in the final manuscript.
 ///
 /// # Examples
 /// ```
@@ -111,8 +110,7 @@ impl Context {
     }
 
     pub fn parse(source: &str) -> Result<Self, ContextError> {
-        let table = source
-            .parse::<Table>()?;
+        let table = source.parse::<Table>()?;
 
         let variables = Self::parse_variables(table)?;
         let context = Self::from(variables);
