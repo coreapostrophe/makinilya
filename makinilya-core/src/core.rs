@@ -8,7 +8,6 @@ use crate::{
     builder::ManuscriptBuilder,
     config::Config,
     context::Context,
-    defaults,
     extensions::CloneOnSome,
     files::{FileHandler, FileHandlerError},
     interpolator::StoryInterpolator,
@@ -45,6 +44,41 @@ pub enum Error {
 pub struct MakinilyaCore;
 
 impl MakinilyaCore {
+    pub const DEFAULT_BASE_DIRECTORY: &str = "./";
+    pub const DEFAULT_DRAFT_DIRECTORY: &str = "draft";
+    pub const DEFAULT_CONTEXT_PATH: &str = "Context.toml";
+    pub const DEFAULT_CONFIG_PATH: &str = "Config.toml";
+    pub const DEFAULT_OUTPUT_PATH: &str = "./out/manuscript.docx";
+    pub const DEFAULT_SCENE: &str = r#"Hi, my name is {{ names.mc }}.
+"#;
+    pub const DEFAULT_CONTEXT: &str = r#"[names]
+mc = "Core"
+"#;
+    pub const DEFAULT_CONFIG: &str = r#"[project]
+base_directory = "./"
+draft_directory = "draft"
+output_path = "./out/manuscript.docx"
+context_path = "Context.toml"
+
+[story]
+title = "Untitled"
+pen_name = "Brutus Ellis"
+
+[author]
+name = "Brutus Ellis"
+address_1 = "2688 South Avenue"
+address_2 = "Barangay Olympia, Makati City"
+mobile_number = "+63 895 053 4757"
+email_address = "brutusellis@email.com"
+
+[agent]
+name = "Cymone Sabina"
+address_1 = "755 Maria Clara Street"
+address_2 = "Mandaluyong City"
+mobile_number = "+63 908 524 4125"
+email_address = "cymonesabina.@email.com"
+"#;
+
     fn handle_directory(directory: impl Into<PathBuf>) {
         let directory: PathBuf = directory.into();
         if !directory.exists() {
@@ -55,7 +89,7 @@ impl MakinilyaCore {
     fn init_config(path: impl Into<PathBuf>) -> Result<Config, Error> {
         let config_path = {
             let mut path: PathBuf = path.into();
-            path.push(defaults::CONFIG_PATH);
+            path.push(Self::DEFAULT_CONFIG_PATH);
             path
         };
         Ok(FileHandler::build_config(config_path)?)
@@ -66,16 +100,16 @@ impl MakinilyaCore {
             Some(project_config) => project_config
                 .base_directory
                 .as_ref()
-                .clone_on_some(defaults::BASE_DIRECTORY.into()),
-            None => defaults::BASE_DIRECTORY.into(),
+                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
+            None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let context_path = {
             let context_path = match &config.project {
                 Some(project_config) => project_config
                     .context_path
                     .as_ref()
-                    .clone_on_some(defaults::CONTEXT_PATH.into()),
-                None => defaults::CONTEXT_PATH.into(),
+                    .clone_on_some(Self::DEFAULT_CONTEXT_PATH.into()),
+                None => Self::DEFAULT_CONTEXT_PATH.into(),
             };
 
             let mut path = base_directory.clone();
@@ -92,16 +126,16 @@ impl MakinilyaCore {
             Some(project_config) => project_config
                 .base_directory
                 .as_ref()
-                .clone_on_some(defaults::BASE_DIRECTORY.into()),
-            None => defaults::BASE_DIRECTORY.into(),
+                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
+            None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let draft_directory = {
             let draft_directory = match &config.project {
                 Some(project_config) => project_config
                     .draft_directory
                     .as_ref()
-                    .clone_on_some(defaults::DRAFT_DIRECTORY.into()),
-                None => defaults::DRAFT_DIRECTORY.into(),
+                    .clone_on_some(Self::DEFAULT_DRAFT_DIRECTORY.into()),
+                None => Self::DEFAULT_DRAFT_DIRECTORY.into(),
             };
 
             let mut path = base_directory.clone();
@@ -129,16 +163,16 @@ impl MakinilyaCore {
             Some(project_config) => project_config
                 .base_directory
                 .as_ref()
-                .clone_on_some(defaults::BASE_DIRECTORY.into()),
-            None => defaults::BASE_DIRECTORY.into(),
+                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
+            None => Self::DEFAULT_BASE_DIRECTORY.into(),
         };
         let output_path = {
             let output_path = match &config.project {
                 Some(project_config) => project_config
                     .output_path
                     .as_ref()
-                    .clone_on_some(defaults::OUTPUT_PATH.into()),
-                None => defaults::OUTPUT_PATH.into(),
+                    .clone_on_some(Self::DEFAULT_OUTPUT_PATH.into()),
+                None => Self::DEFAULT_OUTPUT_PATH.into(),
             };
 
             let mut path = base_directory.clone();
@@ -164,7 +198,7 @@ impl MakinilyaCore {
 
         let chapter_directory = {
             let mut directory = base_directory.clone();
-            directory.push(defaults::DRAFT_DIRECTORY);
+            directory.push(Self::DEFAULT_DRAFT_DIRECTORY);
             directory.push("Chapter 1");
             directory
         };
@@ -187,13 +221,13 @@ impl MakinilyaCore {
         Self::handle_directory(chapter_directory);
 
         let mut scene_file = fs::File::create(scene_path)?;
-        scene_file.write_all(defaults::EXAMPLE_SCENE.as_bytes())?;
+        scene_file.write_all(Self::DEFAULT_SCENE.as_bytes())?;
 
         let mut context_file = fs::File::create(context_path)?;
-        context_file.write_all(defaults::EXAMPLE_CONTEXT.as_bytes())?;
+        context_file.write_all(Self::DEFAULT_CONTEXT.as_bytes())?;
 
         let mut config_file = fs::File::create(config_path)?;
-        config_file.write_all(defaults::EXAMPLE_CONFIG.as_bytes())?;
+        config_file.write_all(Self::DEFAULT_CONFIG.as_bytes())?;
 
         Ok(())
     }

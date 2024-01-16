@@ -1,4 +1,4 @@
-//! Structs for creating the config of the executable.
+//! Structs for creating the config of the crate's executable.
 
 use std::path::PathBuf;
 
@@ -77,7 +77,7 @@ impl Default for ProjectConfig {
     }
 }
 
-/// Contact information struct.
+/// Struct representation of a person's contact information.
 ///
 /// # Examples
 /// ```
@@ -112,7 +112,7 @@ impl Default for ContactInformation {
     }
 }
 
-/// Collective configuration of the executable
+/// Collective configuration of the crate's executable.
 ///
 /// # Examples
 /// ```

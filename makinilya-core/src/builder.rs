@@ -47,14 +47,14 @@ pub struct ManuscriptBuilderLayout {
 
 impl ManuscriptBuilderLayout {
     pub const DEFAULT_TITLE: &str = "Untitled";
-    pub const DEFAULT_PENNAME: &str = "UNKNOWN AUTHOR";
+    pub const DEFAULT_PENNAME: &str = "Unknown Author";
 }
 
 impl Default for ManuscriptBuilderLayout {
     fn default() -> Self {
         Self {
-            title: "Untitled".into(),
-            pen_name: "Unknown Author".into(),
+            title: Self::DEFAULT_TITLE.into(),
+            pen_name: Self::DEFAULT_PENNAME.into(),
             author_information: None,
             agent_information: None,
         }
@@ -88,8 +88,8 @@ impl From<&Config> for ManuscriptBuilderLayout {
 
 /// Builds the manuscript.
 ///
-/// Stores a `layout` field that contains all of the title page information,
-/// and builds the a `manuscript.docx` file from a provided `Story` struct.
+/// Stores a `layout` field that contains all of the title page information, and builds a
+/// `manuscript.docx` file from a provided `Story` struct.
 ///
 /// # Example
 /// ```
@@ -99,7 +99,7 @@ impl From<&Config> for ManuscriptBuilderLayout {
 /// };
 ///
 /// let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
-/// let story = FileHandler::build_story("./mock").unwrap();
+/// let story = FileHandler::build_story("./mock/01-standard-project").unwrap();
 /// let result = builder.build(&story);
 ///
 /// assert!(result.is_ok());
