@@ -45,17 +45,17 @@ pub enum Error {
 pub struct MakinilyaCore;
 
 impl MakinilyaCore {
-    pub const DEFAULT_BASE_DIRECTORY: &str = "./";
-    pub const DEFAULT_DRAFT_DIRECTORY: &str = "draft";
-    pub const DEFAULT_CONTEXT_PATH: &str = "Context.toml";
-    pub const DEFAULT_CONFIG_PATH: &str = "Config.toml";
-    pub const DEFAULT_OUTPUT_PATH: &str = "./out/manuscript.docx";
-    pub const DEFAULT_SCENE: &str = r#"Hi, my name is {{ names.mc }}.
+    pub const DEFAULT_BASE_DIRECTORY: &'static str = "./";
+    pub const DEFAULT_DRAFT_DIRECTORY: &'static str = "draft";
+    pub const DEFAULT_CONTEXT_PATH: &'static str = "Context.toml";
+    pub const DEFAULT_CONFIG_PATH: &'static str = "Config.toml";
+    pub const DEFAULT_OUTPUT_PATH: &'static str = "./out/manuscript.docx";
+    pub const DEFAULT_SCENE: &'static str = r#"Hi, my name is {{ names.mc }}.
 "#;
-    pub const DEFAULT_CONTEXT: &str = r#"[names]
+    pub const DEFAULT_CONTEXT: &'static str = r#"[names]
 mc = "Core"
 "#;
-    pub const DEFAULT_CONFIG: &str = r#"[project]
+    pub const DEFAULT_CONFIG: &'static str = r#"[project]
 base_directory = "./"
 draft_directory = "draft"
 output_path = "./out/manuscript.docx"

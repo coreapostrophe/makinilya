@@ -46,8 +46,8 @@ pub struct ManuscriptBuilderLayout {
 }
 
 impl ManuscriptBuilderLayout {
-    pub const DEFAULT_TITLE: &str = "Untitled";
-    pub const DEFAULT_PENNAME: &str = "Unknown Author";
+    pub const DEFAULT_TITLE: &'static str = "Untitled";
+    pub const DEFAULT_PENNAME: &'static str = "Unknown Author";
 }
 
 impl Default for ManuscriptBuilderLayout {
