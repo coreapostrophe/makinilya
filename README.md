@@ -1,7 +1,11 @@
 
 # Makinilya
 
-<p align="center"><img src="./assets/makinilya-logo.png" style="height:200px"/></p>
+<p align="center">
+    <img
+        src="https://raw.githubusercontent.com/coreapostrophe/makinilya/main/assets/makinilya-logo.png"
+        style="height:200px"/>
+</p>
 <p align="center">
     A manuscript generator for ascetic writers.
 </p>
@@ -9,12 +13,6 @@
     <img src="https://github.com/coreapostrophe/makinilya/actions/workflows/release.yml/badge.svg">
     <img src="https://github.com/coreapostrophe/makinilya/actions/workflows/build.yml/badge.svg">
 </p>
-
-## Crates
-
-1. [`makinilya-cli`](./makinilya-cli/) - The main crate that serves the command-line interface of the application.
-2. [`makinilya-core`](./makinilya-core/) - The core crate that contains the functionalities that reads the project, interpolates the content, and builds the manuscript.
-3. [`makinilya-text`](./makinilya-text/) - The language crate that contains the implementation of the parser and its grammar rules.
 
 ## Installation
 
@@ -112,7 +110,3 @@ makinilya build
 ```
 
 This will generate a `manuscript.docx` file inside a generated `out` directory within the project.
-
-## Documentation
-
-The in-depth documentation of Makinilya's usage is currently still a work in progress.

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
-use makinilya_core::core::MakinilyaCore;
+use makinilya::core::MakinilyaCore;
 
 mod style;
 
