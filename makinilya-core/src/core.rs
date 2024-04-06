@@ -6,7 +6,7 @@ use colored::Colorize;
 use thiserror::Error;
 
 use crate::{
-    builder::ManuscriptBuilder,
+    builder::{BuilderError, ManuscriptBuilder},
     config::{Config, ConfigError},
     context::{Context, ContextError},
     extensions::CloneOnSome,
@@ -18,29 +18,32 @@ use crate::{
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("[Io Error]: {0}")]
-    IoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 
     #[error("[FileHandler Error]: {0}")]
-    FileHandlerError(#[from] ReaderError),
+    Reader(#[from] ReaderError),
 
     #[error("[Parser Error]: {0}")]
-    ParserError(#[from] makinilya_text::Error),
+    Parser(#[from] makinilya_text::Error),
 
     #[error("[Config Error]: {0}")]
-    ConfigError(#[from] ConfigError),
+    Config(#[from] ConfigError),
 
     #[error("[Context Error]: {0}")]
-    ContextError(#[from] ContextError),
+    Context(#[from] ContextError),
+
+    #[error("[Builder Error]: {0}")]
+    Builder(#[from] BuilderError),
+
+    #[error("[Packing Error]: {0}")]
+    Zipper(#[from] zip::result::ZipError),
 }
 
 /// A struct that contains all static functions for the core commands of the crate.
 ///
 /// # Examples
 /// ```
-/// use makinilya_core::{
-///     core::MakinilyaCore,
-///     config::{Config, ProjectConfig}
-/// };
+/// use makinilya_core::core::MakinilyaCore;
 /// use std::path::PathBuf;
 ///
 /// let path = std::env::current_dir().unwrap();
@@ -92,11 +95,8 @@ email_address = "cymonesabina.@email.com"
     }
 
     fn init_config(path: impl Into<PathBuf>) -> Result<Config, Error> {
-        let config_path = {
-            let mut path: PathBuf = path.into();
-            path.push(Self::CONFIG_FILE_NAME);
-            path
-        };
+        let mut config_path = path.into();
+        config_path.push(Self::CONFIG_FILE_NAME);
         Ok(Config::read(config_path)?)
     }
 
@@ -122,7 +122,6 @@ email_address = "cymonesabina.@email.com"
         Ok(Story::read(draft_directory)?)
     }
 
-    /// Interpolates the story and builds the manuscript
     pub fn build(path: impl Into<PathBuf>) -> Result<(), Error> {
         let path_buf: PathBuf = path.into();
 
@@ -133,9 +132,9 @@ email_address = "cymonesabina.@email.com"
         let interpolated_story = StoryInterpolator::interpolate(&story, &context)?;
 
         let builder = ManuscriptBuilder::new(&config);
-        let manuscript_document = builder.build(&interpolated_story).unwrap();
+        let manuscript_document = builder.build_docx(&interpolated_story)?;
 
-        let mut output_path = path_buf.clone();
+        let mut output_path = path_buf;
 
         output_path.push(match &config.project {
             Some(project_config) => project_config
@@ -150,8 +149,8 @@ email_address = "cymonesabina.@email.com"
 
         Self::handle_directory(&output_directory)?;
 
-        let file = fs::File::create(&output_path).unwrap();
-        manuscript_document.build().pack(file).unwrap();
+        let file = fs::File::create(&output_path)?;
+        manuscript_document.build().pack(file)?;
 
         println!(
             "{}{} final manuscript ({})\n",
@@ -210,7 +209,6 @@ email_address = "cymonesabina.@email.com"
         Ok(())
     }
 
-    /// Lists all existing identifiers in project
     pub fn check(path: impl Into<PathBuf>) -> Result<(), Error> {
         let path_buf: PathBuf = path.into();
         let config = Self::init_config(path_buf.clone())?;

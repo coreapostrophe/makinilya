@@ -8,10 +8,10 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error(transparent)]
-    ParsingError(#[from] toml::de::Error),
+    Parsing(#[from] toml::de::Error),
 
     #[error(transparent)]
-    StdIoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 }
 
 /// General detail configurations of the manuscript.

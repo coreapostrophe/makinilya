@@ -102,7 +102,7 @@ impl From<&Config> for ManuscriptBuilderLayout {
 ///
 /// let path = std::env::current_dir().unwrap();
 /// let story = Story::read(path.join("mock/01-standard-project")).unwrap();
-/// let result = builder.build(&story);
+/// let result = builder.build_docx(&story);
 ///
 /// assert!(result.is_ok());
 /// ```
@@ -333,7 +333,7 @@ impl ManuscriptBuilder {
     /// that can be written to a file via the [`docx-rs`] library.
     ///
     /// [`docx-rs`]: https://github.com/bokuweb/docx-rs
-    pub fn build(&self, story: &Story) -> Result<Docx, BuilderError> {
+    pub fn build_docx(&self, story: &Story) -> Result<Docx, BuilderError> {
         let word_count = Self::word_count(story);
 
         let mut doc = self.build_document();
@@ -349,7 +349,7 @@ mod builder_tests {
     use super::*;
 
     #[test]
-    fn builds_document() {
+    fn builds_docx() {
         let mock_story = {
             let mut story = Story::new("Root");
 
@@ -363,7 +363,7 @@ mod builder_tests {
         };
 
         let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
-        let result = builder.build(&mock_story);
+        let result = builder.build_docx(&mock_story);
         assert!(result.is_ok());
     }
 }

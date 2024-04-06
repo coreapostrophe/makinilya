@@ -8,10 +8,10 @@ use toml::{Table, Value};
 #[derive(Error, Debug)]
 pub enum ContextError {
     #[error(transparent)]
-    ParsingError(#[from] toml::de::Error),
+    Parsing(#[from] toml::de::Error),
 
     #[error(transparent)]
-    StdIoError(#[from] std::io::Error),
+    Io(#[from] std::io::Error),
 
     #[error("`DateTime` and `Array` are not supported context values.")]
     UnsupportedValue,
