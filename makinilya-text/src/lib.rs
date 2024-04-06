@@ -5,16 +5,6 @@
 //! and better open-source consumption. The parser is dependent on the [`pest`]
 //! parser generator crate.
 //!
-//! # Examples
-//! ```
-//! use makinilya_text::MakinilyaText;
-//!
-//! let source_string = r#"Hi, my name is {{ names.mc}}."#;
-//!
-//! let result = MakinilyaText::parse(source_string);
-//! assert!(result.is_ok());
-//! ```
-//!
 //! [`pest`]: https://pest.rs/
 
 use pest::{error::LineColLocation, iterators::Pairs, Parser, RuleType};
