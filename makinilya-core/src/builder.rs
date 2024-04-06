@@ -95,11 +95,13 @@ impl From<&Config> for ManuscriptBuilderLayout {
 /// ```
 /// use makinilya_core::{
 ///     builder::{ManuscriptBuilder, ManuscriptBuilderLayout},
-///     files::FileHandler,
+///     story::Story,
 /// };
 ///
 /// let builder = ManuscriptBuilder::new(ManuscriptBuilderLayout::default());
-/// let story = FileHandler::build_story("./mock/01-standard-project").unwrap();
+///
+/// let path = std::env::current_dir().unwrap();
+/// let story = Story::read(path.join("mock/01-standard-project")).unwrap();
 /// let result = builder.build(&story);
 ///
 /// assert!(result.is_ok());
@@ -210,16 +212,28 @@ impl ManuscriptBuilder {
 
         let title = &self.layout.title;
         let pen_name = &self.layout.pen_name;
-        let agent_information = self
-            .layout
-            .agent_information
-            .as_ref()
-            .clone_on_some(Default::default());
-        let contact_information = self
-            .layout
-            .author_information
-            .as_ref()
-            .clone_on_some(Default::default());
+        let agent_information =
+            self.layout
+                .agent_information
+                .as_ref()
+                .clone_on_some(ContactInformation {
+                    address_1: None,
+                    address_2: None,
+                    email_address: None,
+                    mobile_number: None,
+                    name: None,
+                });
+        let contact_information =
+            self.layout
+                .author_information
+                .as_ref()
+                .clone_on_some(ContactInformation {
+                    address_1: None,
+                    address_2: None,
+                    email_address: None,
+                    mobile_number: None,
+                    name: None,
+                });
         let word_count = format!(
             "{} words",
             word_count.to_string().with_thousands_separator()
@@ -335,7 +349,7 @@ mod builder_tests {
     use super::*;
 
     #[test]
-    fn builds_pdf() {
+    fn builds_document() {
         let mock_story = {
             let mut story = Story::new("Root");
 

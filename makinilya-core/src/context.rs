@@ -1,6 +1,6 @@
 //! Structs for creating the context of the narrative.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use thiserror::Error;
 use toml::{Table, Value};
@@ -9,6 +9,9 @@ use toml::{Table, Value};
 pub enum ContextError {
     #[error(transparent)]
     ParsingError(#[from] toml::de::Error),
+
+    #[error(transparent)]
+    StdIoError(#[from] std::io::Error),
 
     #[error("`DateTime` and `Array` are not supported context values.")]
     UnsupportedValue,
@@ -115,6 +118,12 @@ impl Context {
         let variables = Self::parse_variables(table)?;
         let context = Self::from(variables);
 
+        Ok(context)
+    }
+
+    pub fn read(path: impl Into<PathBuf>) -> Result<Context, ContextError> {
+        let file_string = std::fs::read_to_string(path.into().as_path())?;
+        let context = Self::parse(&file_string)?;
         Ok(context)
     }
 }

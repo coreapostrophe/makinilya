@@ -1,15 +1,13 @@
-//! Structs for units used in the Office Open XML (OOXML)
-//! specification.
+//! Structs for units used in the Office Open XML (OOXML) specification.
 //!
-//! The conversion values were taken from the [Open XML SDK]
-//! from Microsoft.
+//! The conversion values were taken from the [Open XML SDK] from Microsoft.
 //!
 //! [Open XML SDK]: https://learn.microsoft.com/en-us/office/open-xml/open-xml-sdk
 
 use std::fmt::Debug;
 
-/// A unit that equates to one-twentieth of an imperial point,
-/// hence "twip". It is 1/1440 of an inch.
+/// A unit that equates to one-twentieth of an imperial point, hence "twip". It is 1/1440
+/// of an inch.
 ///
 /// # Examples
 /// ```
@@ -47,27 +45,27 @@ impl Debug for Twip {
     }
 }
 
-impl Into<usize> for Twip {
-    fn into(self) -> usize {
-        self.0 as usize
+impl From<Twip> for usize {
+    fn from(value: Twip) -> Self {
+        value.0 as usize
     }
 }
 
-impl Into<u32> for Twip {
-    fn into(self) -> u32 {
-        self.0 as u32
+impl From<Twip> for u32 {
+    fn from(value: Twip) -> Self {
+        value.0 as u32
     }
 }
 
-impl Into<i32> for Twip {
-    fn into(self) -> i32 {
-        self.0 as i32
+impl From<Twip> for i32 {
+    fn from(value: Twip) -> Self {
+        value.0 as i32
     }
 }
 
-impl Into<f32> for Twip {
-    fn into(self) -> f32 {
-        self.0 as f32
+impl From<Twip> for f32 {
+    fn from(value: Twip) -> Self {
+        value.0 as f32
     }
 }
 
@@ -98,15 +96,13 @@ impl PartialEq<Twip> for f32 {
     }
 }
 
-/// As the name suggests. This is half of a point. It is 1/144
-/// of an inch.
+/// As the name suggests, this is half of a point. It is 1/144 of an inch.
 ///
 /// # Examples
 /// ```
 /// use makinilya_core::units::HalfPoint;
 ///
 /// let half_point_12_point = HalfPoint::from_point(12.0);
-///
 /// let usize_half_point: usize = half_point_12_point.into();
 ///
 /// assert_eq!(HalfPoint::from_point(12.0), 12.0 * 2.0);
@@ -119,9 +115,9 @@ impl HalfPoint {
     }
 }
 
-impl Into<usize> for HalfPoint {
-    fn into(self) -> usize {
-        self.0 as usize
+impl From<HalfPoint> for usize {
+    fn from(value: HalfPoint) -> Self {
+        value.0 as usize
     }
 }
 
@@ -131,7 +127,7 @@ impl Debug for HalfPoint {
     }
 }
 
-impl PartialEq for HalfPoint{
+impl PartialEq for HalfPoint {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }

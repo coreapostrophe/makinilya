@@ -1,20 +1,16 @@
 //! Structs for representing the written narrative.
 
-use crate::files::{Directory, PathItem};
+use std::path::PathBuf;
+
+use crate::files::{Directory, PathItem, ReaderError};
 
 pub const MAKINILYA_TEXT_EXTENSION: &str = "mt";
 
 /// Data structure that represents the story.
 ///
-/// - `Parts` are organizational sections of the story, they
-/// can also be called as Chapters, or Acts.
-/// - `Contents` are the actual scenes within such parts, and
-/// contains the actual narrative.
-///
-/// The whole story, itself, is a part that we conventionally
-/// entitle "root". It comprises a combination of parts and
-/// contents.
-///
+/// - `Parts` are organizational sections of the story, they can also be called as Chapters,
+/// or Acts. The whole story itself is a part.
+/// - `Contents` are the actual scenes within such parts, and contains the actual narrative.
 ///
 /// # Examples
 /// ```
@@ -93,5 +89,11 @@ impl Story {
         }
 
         story
+    }
+
+    pub fn read(path: impl Into<PathBuf>) -> Result<Story, ReaderError> {
+        let directory = Directory::read(path)?;
+        let story = Story::parse(&directory);
+        Ok(story)
     }
 }

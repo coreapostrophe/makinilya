@@ -1,11 +1,9 @@
 [project]
-base_directory = "./mock/01-standard-project"
 draft_directory = "draft"
-output_path = "./out/manuscript.docx"
-context_path = "Context.toml"
+output_path = "out/manuscript.docx"
 
 [story]
-title = "Mock Story"
+title = "Untitled"
 pen_name = "Brutus Ellis"
 
 [author]

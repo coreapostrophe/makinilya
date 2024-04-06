@@ -9,6 +9,9 @@ use thiserror::Error;
 pub enum ConfigError {
     #[error(transparent)]
     ParsingError(#[from] toml::de::Error),
+
+    #[error(transparent)]
+    StdIoError(#[from] std::io::Error),
 }
 
 /// General detail configurations of the manuscript.
@@ -31,50 +34,24 @@ pub struct StoryConfig {
     pub pen_name: Option<String>,
 }
 
-impl Default for StoryConfig {
-    fn default() -> Self {
-        Self {
-            title: None,
-            pen_name: None,
-        }
-    }
-}
-
 /// Project structure configurations of the manuscript
 ///
-/// - `base_directory` - The directory that's prefixed to all other project structure paths.
 /// - `draft_directory` - The directory where the narrative scenes and chapters are contained.
 /// - `output_path` - The path of the file where the final manuscript is built.
-/// - `context_path` - The path to the file where context of the narrative is stored.
 ///
 /// # Examples
 /// ```
 /// use makinilya_core::config::ProjectConfig;
 ///
 /// let project_config = ProjectConfig {
-///     base_directory: Some("./".into()),
 ///     draft_directory: Some("draft".into()),
 ///     output_path: Some("./out/manuscript.docx".into()),
-///     context_path: Some("./Context.toml".into()),
 /// };
 /// ```
 #[derive(Debug, Deserialize, Clone)]
 pub struct ProjectConfig {
-    pub base_directory: Option<PathBuf>,
     pub draft_directory: Option<PathBuf>,
     pub output_path: Option<PathBuf>,
-    pub context_path: Option<PathBuf>,
-}
-
-impl Default for ProjectConfig {
-    fn default() -> Self {
-        Self {
-            base_directory: None,
-            draft_directory: None,
-            output_path: None,
-            context_path: None,
-        }
-    }
 }
 
 /// Struct representation of a person's contact information.
@@ -100,18 +77,6 @@ pub struct ContactInformation {
     pub email_address: Option<String>,
 }
 
-impl Default for ContactInformation {
-    fn default() -> Self {
-        Self {
-            name: None,
-            address_1: None,
-            address_2: None,
-            mobile_number: None,
-            email_address: None,
-        }
-    }
-}
-
 /// Collective configuration of the crate's executable.
 ///
 /// # Examples
@@ -124,10 +89,8 @@ impl Default for ContactInformation {
 /// };
 ///
 /// let project = ProjectConfig {
-///     base_directory: Some("./".into()),
 ///     draft_directory: Some("draft".into()),
 ///     output_path: Some("./out/manuscript.docx".into()),
-///     context_path: Some("./Context.toml".into()),
 /// };
 ///
 /// let author = ContactInformation {
@@ -161,19 +124,14 @@ pub struct Config {
     pub agent: Option<ContactInformation>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            story: None,
-            project: None,
-            author: None,
-            agent: None,
-        }
-    }
-}
-
 impl Config {
     pub fn parse(source: &str) -> Result<Self, ConfigError> {
         Ok(toml::from_str(source)?)
+    }
+
+    pub fn read(path: impl Into<PathBuf>) -> Result<Self, ConfigError> {
+        let file_string = std::fs::read_to_string(path.into().as_path())?;
+        let config = Config::parse(&file_string)?;
+        Ok(config)
     }
 }

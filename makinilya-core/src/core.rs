@@ -7,59 +7,62 @@ use thiserror::Error;
 
 use crate::{
     builder::ManuscriptBuilder,
-    config::Config,
-    context::Context,
+    config::{Config, ConfigError},
+    context::{Context, ContextError},
     extensions::CloneOnSome,
-    files::{FileHandler, FileHandlerError},
+    files::ReaderError,
     interpolator::StoryInterpolator,
     story::Story,
 };
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("[FileHandler Error]: {0}")]
+    #[error("[Io Error]: {0}")]
     IoError(#[from] std::io::Error),
 
     #[error("[FileHandler Error]: {0}")]
-    FileHandlerError(#[from] FileHandlerError),
+    FileHandlerError(#[from] ReaderError),
 
     #[error("[Parser Error]: {0}")]
     ParserError(#[from] makinilya_text::Error),
+
+    #[error("[Config Error]: {0}")]
+    ConfigError(#[from] ConfigError),
+
+    #[error("[Context Error]: {0}")]
+    ContextError(#[from] ContextError),
 }
 
 /// A struct that contains all static functions for the core commands of the crate.
 ///
 /// # Examples
-/// ```no_run
+/// ```
 /// use makinilya_core::{
 ///     core::MakinilyaCore,
 ///     config::{Config, ProjectConfig}
 /// };
 /// use std::path::PathBuf;
 ///
-/// let story = MakinilyaCore::build("./sample-project");
+/// let path = std::env::current_dir().unwrap();
+/// let result = MakinilyaCore::build(path.join("mock/01-standard-project"));
 ///
-/// assert!(story.is_ok());
+/// assert!(result.is_ok());
 /// ```
 #[derive(Debug)]
 pub struct MakinilyaCore;
 
 impl MakinilyaCore {
-    pub const DEFAULT_BASE_DIRECTORY: &'static str = "./";
+    pub const CONFIG_FILE_NAME: &'static str = "Config.toml";
+    pub const CONTEXT_FILE_NAME: &'static str = "Context.toml";
     pub const DEFAULT_DRAFT_DIRECTORY: &'static str = "draft";
-    pub const DEFAULT_CONTEXT_PATH: &'static str = "Context.toml";
-    pub const DEFAULT_CONFIG_PATH: &'static str = "Config.toml";
-    pub const DEFAULT_OUTPUT_PATH: &'static str = "./out/manuscript.docx";
-    pub const DEFAULT_SCENE: &'static str = r#"Hi, my name is {{ names.mc }}.
-"#;
+    pub const DEFAULT_OUTPUT_PATH: &'static str = "out/manuscript.docx";
+    pub const DEFAULT_SCENE: &'static str = r#"Hi, my name is {{ names.mc }}."#;
     pub const DEFAULT_CONTEXT: &'static str = r#"[names]
 mc = "Core"
 "#;
     pub const DEFAULT_CONFIG: &'static str = r#"[project]
-base_directory = "./"
 draft_directory = "draft"
-output_path = "./out/manuscript.docx"
-context_path = "Context.toml"
+output_path = "out/manuscript.docx"
 
 [story]
 title = "Untitled"
@@ -80,112 +83,72 @@ mobile_number = "+63 908 524 4125"
 email_address = "cymonesabina.@email.com"
 "#;
 
-    fn handle_directory(directory: impl Into<PathBuf>) {
+    fn handle_directory(directory: impl Into<PathBuf>) -> Result<(), std::io::Error> {
         let directory: PathBuf = directory.into();
         if !directory.exists() {
-            fs::create_dir_all(&directory).unwrap();
+            fs::create_dir_all(&directory)?;
         }
+        Ok(())
     }
 
     fn init_config(path: impl Into<PathBuf>) -> Result<Config, Error> {
         let config_path = {
             let mut path: PathBuf = path.into();
-            path.push(Self::DEFAULT_CONFIG_PATH);
+            path.push(Self::CONFIG_FILE_NAME);
             path
         };
-        Ok(FileHandler::build_config(config_path)?)
+        Ok(Config::read(config_path)?)
     }
 
-    fn init_context(config: &Config) -> Result<Context, Error> {
-        let base_directory = match &config.project {
-            Some(project_config) => project_config
-                .base_directory
-                .as_ref()
-                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
-            None => Self::DEFAULT_BASE_DIRECTORY.into(),
-        };
-        let context_path = {
-            let context_path = match &config.project {
-                Some(project_config) => project_config
-                    .context_path
-                    .as_ref()
-                    .clone_on_some(Self::DEFAULT_CONTEXT_PATH.into()),
-                None => Self::DEFAULT_CONTEXT_PATH.into(),
-            };
-
-            let mut path = base_directory.clone();
-            path.push(context_path);
-
-            path
-        };
-
-        Ok(FileHandler::build_context(context_path)?)
+    fn init_context(path: impl Into<PathBuf>) -> Result<Context, Error> {
+        let mut context_path = path.into();
+        context_path.push(Self::CONTEXT_FILE_NAME);
+        Ok(Context::read(context_path)?)
     }
 
-    fn init_story(config: &Config) -> Result<Story, Error> {
-        let base_directory = match &config.project {
+    fn init_story(path: impl Into<PathBuf>, config: &Config) -> Result<Story, Error> {
+        let mut draft_directory = path.into();
+
+        draft_directory.push(match &config.project {
             Some(project_config) => project_config
-                .base_directory
+                .draft_directory
                 .as_ref()
-                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
-            None => Self::DEFAULT_BASE_DIRECTORY.into(),
-        };
-        let draft_directory = {
-            let draft_directory = match &config.project {
-                Some(project_config) => project_config
-                    .draft_directory
-                    .as_ref()
-                    .clone_on_some(Self::DEFAULT_DRAFT_DIRECTORY.into()),
-                None => Self::DEFAULT_DRAFT_DIRECTORY.into(),
-            };
+                .clone_on_some(Self::DEFAULT_DRAFT_DIRECTORY.into()),
+            None => Self::DEFAULT_DRAFT_DIRECTORY.into(),
+        });
 
-            let mut path = base_directory.clone();
-            path.push(draft_directory);
+        Self::handle_directory(&draft_directory)?;
 
-            path
-        };
-
-        Self::handle_directory(&draft_directory);
-        Ok(FileHandler::build_story(draft_directory)?)
+        Ok(Story::read(draft_directory)?)
     }
 
     /// Interpolates the story and builds the manuscript
     pub fn build(path: impl Into<PathBuf>) -> Result<(), Error> {
-        let config = Self::init_config(path)?;
-        let story = Self::init_story(&config)?;
-        let context = Self::init_context(&config)?;
+        let path_buf: PathBuf = path.into();
+
+        let config = Self::init_config(path_buf.clone())?;
+        let story = Self::init_story(path_buf.clone(), &config)?;
+        let context = Self::init_context(path_buf.clone())?;
 
         let interpolated_story = StoryInterpolator::interpolate(&story, &context)?;
 
         let builder = ManuscriptBuilder::new(&config);
         let manuscript_document = builder.build(&interpolated_story).unwrap();
 
-        let base_directory = match &config.project {
+        let mut output_path = path_buf.clone();
+
+        output_path.push(match &config.project {
             Some(project_config) => project_config
-                .base_directory
+                .output_path
                 .as_ref()
-                .clone_on_some(Self::DEFAULT_BASE_DIRECTORY.into()),
-            None => Self::DEFAULT_BASE_DIRECTORY.into(),
-        };
-        let output_path = {
-            let output_path = match &config.project {
-                Some(project_config) => project_config
-                    .output_path
-                    .as_ref()
-                    .clone_on_some(Self::DEFAULT_OUTPUT_PATH.into()),
-                None => Self::DEFAULT_OUTPUT_PATH.into(),
-            };
-
-            let mut path = base_directory.clone();
-            path.push(output_path);
-
-            path
-        };
+                .clone_on_some(Self::DEFAULT_OUTPUT_PATH.into()),
+            None => Self::DEFAULT_OUTPUT_PATH.into(),
+        });
 
         let mut output_directory = output_path.clone();
         output_directory.pop();
 
-        Self::handle_directory(&output_directory);
+        Self::handle_directory(&output_directory)?;
 
         let file = fs::File::create(&output_path).unwrap();
         manuscript_document.build().pack(file).unwrap();
@@ -226,7 +189,7 @@ email_address = "cymonesabina.@email.com"
             path
         };
 
-        Self::handle_directory(chapter_directory);
+        Self::handle_directory(chapter_directory)?;
 
         let mut scene_file = fs::File::create(scene_path)?;
         scene_file.write_all(Self::DEFAULT_SCENE.as_bytes())?;
@@ -249,8 +212,9 @@ email_address = "cymonesabina.@email.com"
 
     /// Lists all existing identifiers in project
     pub fn check(path: impl Into<PathBuf>) -> Result<(), Error> {
-        let config = Self::init_config(path)?;
-        let story = Self::init_story(&config)?;
+        let path_buf: PathBuf = path.into();
+        let config = Self::init_config(path_buf.clone())?;
+        let story = Self::init_story(path_buf, &config)?;
 
         let checked_story = StoryInterpolator::check(&story)?;
 
@@ -272,19 +236,22 @@ mod core_tests {
 
     #[test]
     fn builds_manuscript() {
-        let result = MakinilyaCore::build("./mock/01-standard-project");
+        let path = std::env::current_dir().unwrap();
+        let result = MakinilyaCore::build(path.join("mock/01-standard-project"));
         assert!(result.is_ok());
     }
 
     #[test]
     fn new_project() {
-        let result = MakinilyaCore::new("./mock/02-new-project");
+        let path = std::env::current_dir().unwrap();
+        let result = MakinilyaCore::new(path.join("mock/02-new-project"));
         assert!(result.is_ok());
     }
 
     #[test]
     fn check_project() {
-        let result = MakinilyaCore::check("./mock/01-standard-project");
+        let path = std::env::current_dir().unwrap();
+        let result = MakinilyaCore::check(path.join("mock/01-standard-project"));
         assert!(result.is_ok());
     }
 }
